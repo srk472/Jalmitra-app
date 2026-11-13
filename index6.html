@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="hi" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#003366">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- English App Name (अंग्रेजी नाम फिक्स) -->
+  <title>Jal Mitra-BP</title>
+  <meta name="application-name" content="Jal Mitra-BP">
+  <meta name="apple-mobile-web-app-title" content="Jal Mitra-BP">
+
+  <!-- App Icon & Favicon (जल मित्र आइकन) -->
+  <link rel="icon" type="image/png" href="app-icon.png">
+  <link rel="apple-touch-icon" href="app-icon.png">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Google Fonts: Poppins + Noto Sans Devanagari -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Poppins', 'Noto Sans Devanagari', 'sans-serif'] },
+          colors: {
+            brand: { blue: '#003366', lightBlue: '#0284c7', aqua: '#38bdf8', saffron: '#FF9933', green: '#138808' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- External App Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 antialiased h-full flex flex-col select-none overflow-x-hidden">
+
+  <!-- ================= 0. SPLASH SCREEN (100% FULL SCREEN FIX) ================= -->
+  <div id="splashScreen" class="splash-screen">
+    <img src="splash-logo.png" alt="जल मित्र" class="splash-full-img">
+  </div>
+
+  <!-- ================= 1. APP TOP BAR (FIXED) ================= -->
+  <header id="appHeader" class="fixed top-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-md border-b border-slate-200 z-30 px-3 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-2.5">
+      <!-- Hamburger Menu for Sidebar Drawer -->
+      <button id="sidebarToggleBtn" class="w-9 h-9 rounded-xl flex items-center justify-center text-brand-blue bg-blue-50/80 active:scale-95 transition" onclick="toggleSidebar(true)">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <!-- App Logo -->
+      <div class="flex items-center gap-2">
+        <img src="logo.png" alt="Bharat Peyjal" class="h-8 w-auto object-contain">
+        <span class="font-extrabold text-sm tracking-tight text-brand-blue leading-none">
+          भारत पेयजल
+          <span class="block text-[9.5px] font-semibold text-slate-500">जल मित्र ऐप</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Right Header Action (Badge / Helpline) -->
+    <div class="flex items-center gap-1.5">
+      <div id="headerBadge" class="hidden items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10.5px] font-bold px-2 py-1 rounded-full">
+        <i class="fa-solid fa-droplet text-amber-500"></i> जल मित्र
+      </div>
+      <a href="tel:+917860393198" id="headerCallBtn" class="w-8 h-8 rounded-full bg-brand-blue text-white flex items-center justify-center text-xs shadow-sm">
+        <i class="fa-solid fa-phone"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- ================= 2. SIDEBAR (SLIDE-OVER DRAWER) ================= -->
+  <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden transition-opacity duration-300" onclick="toggleSidebar(false)"></div>
+  
+  <aside id="appSidebar" class="fixed top-0 left-0 bottom-0 w-[290px] max-w-[85vw] bg-white z-50 shadow-2xl flex flex-col transform -translate-x-full transition-transform duration-300 ease-in-out">
+    <!-- Sidebar Header / Profile Card -->
+    <div class="p-4 bg-gradient-to-br from-[#003366] to-[#0284c7] text-white">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[11px] font-semibold tracking-wider uppercase text-blue-200">जल मित्र प्रोफ़ाइल</span>
+        <button class="text-white/80 hover:text-white p-1" onclick="toggleSidebar(false)">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl border border-white/20">
+          🙏
+        </div>
+        <div class="min-w-0">
+          <h4 id="sideStaffName" class="font-bold text-base leading-snug truncate">लॉगिन नहीं हैं</h4>
+          <span id="sideStaffId" class="inline-block text-[11px] bg-white/20 px-2 py-0.5 rounded font-mono">ID: ----</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Menu Links -->
+    <div class="flex-1 overflow-y-auto py-3 px-2 space-y-1">
+      <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 font-semibold text-xs text-left active:bg-blue-50 transition" onclick="navigateTab('tab-dashboard'); toggleSidebar(false);">
+        <i class="fa-solid fa-gauge-high text-brand-blue w-5 text-center"></i>
+        <span>डैशबोर्ड (होम)</span>
+      </button>
+
+      <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 font-semibold text-xs text-left active:bg-blue-50 transition" onclick="navigateTab('tab-salary'); toggleSidebar(false);">
+        <i class="fa-solid fa-receipt text-emerald-600 w-5 text-center"></i>
+        <span>विस्तृत वेतन हिसाब</span>
+      </button>
+
+      <!-- Separate Increment Policy Link in Sidebar -->
+      <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 font-semibold text-xs text-left active:bg-blue-50 transition" onclick="navigateTab('tab-increment'); toggleSidebar(false);">
+        <i class="fa-solid fa-arrow-trend-up text-amber-500 w-5 text-center"></i>
+        <span>वेतन वृद्धि नियम (इंक्रीमेंट)</span>
+      </button>
+
+      <div class="my-2 border-t border-slate-100"></div>
+
+      <div class="px-3 py-1.5 text-[10px] uppercase font-bold text-slate-400 tracking-wider">सेटिंग्स व सहायता</div>
+
+      <a href="tel:+917860393198" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-700 font-semibold text-xs text-decoration-none">
+        <i class="fa-solid fa-headset text-brand-aqua w-5 text-center"></i>
+        <span>हेल्पलाइन (7860393198)</span>
+      </a>
+
+      <button id="sideLoginBtn" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-blue font-bold text-xs text-left" onclick="showLoginModal(); toggleSidebar(false);">
+        <i class="fa-solid fa-right-to-bracket w-5 text-center"></i>
+        <span>लॉगिन करें</span>
+      </button>
+
+      <button id="sideLogoutBtn" class="w-full hidden items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 font-bold text-xs text-left" onclick="logout(); toggleSidebar(false);">
+        <i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i>
+        <span>लॉगआउट करें</span>
+      </button>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-3 border-t border-slate-100 text-center">
+      <p class="text-[10px] text-slate-400 font-medium">🇮🇳 भारत पेयजल • Version 2.0 (App)</p>
+    </div>
+  </aside>
+
+  <!-- ================= 3. APP MAIN VIEWS CONTAINER ================= -->
+  <main class="flex-1 overflow-y-auto pt-14 pb-16 px-3">
+
+    <!-- Loading Spinner (API Fetching) -->
+    <div id="loadingBox" class="hidden flex-col items-center justify-center py-20 text-center">
+      <div class="w-10 h-10 border-4 border-brand-blue border-t-transparent rounded-full animate-spin mb-3"></div>
+      <p class="text-xs font-semibold text-slate-500">डेटा लोड हो रहा है, कृपया प्रतीक्षा करें...</p>
+    </div>
+
+    <!-- VIEW 1: DASHBOARD (HOME TAB) -->
+    <div id="view-dashboard" class="tab-view active max-w-md mx-auto pt-2">
+      
+      <!-- User Profile Header & Month Dropdown -->
+      <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-8 h-8 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center text-sm font-bold">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            <div class="min-w-0">
+              <h5 class="text-xs font-bold text-slate-800 truncate" id="vStaffName">नमस्ते, अतिथि</h5>
+              <p class="text-[10px] text-slate-400 leading-none" id="vStaffId">ID: BP---</p>
+            </div>
+          </div>
+          <span class="badge-jalmitra">
+            <i class="fa-solid fa-droplet text-amber-500"></i> जल मित्र
+          </span>
+        </div>
+
+        <!-- Month Dropdown Selector -->
+        <div class="bg-blue-50/70 p-2 rounded-xl flex items-center justify-between gap-2 border border-blue-100">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-calendar-days text-brand-aqua text-xs"></i>
+            <span class="text-[11px] font-bold text-slate-700">वेतन माह:</span>
+          </div>
+          <select id="monthSelector" class="bg-white border border-blue-300 text-brand-blue text-xs font-bold rounded-lg px-2 py-1 outline-none shadow-sm" onchange="onMonthChange(this.value)">
+            <!-- Options dynamically added by JS -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Net In-Hand Salary Banner -->
+      <div class="bg-gradient-to-br from-[#003366] to-[#1e40af] text-white rounded-2xl p-4 shadow-md text-center mb-3">
+        <span class="inline-block bg-white/20 text-white text-[10.5px] font-bold px-3 py-0.5 rounded-full mb-1">
+          कुल शुद्ध सैलरी (NET PAYABLE)
+        </span>
+        <div class="text-3xl font-extrabold text-amber-300 my-1" id="vInHand">₹0</div>
+        <p class="text-[10px] text-blue-100 mb-3 opacity-90">इंसेंटिव जोड़कर और एडवांस व कटौतियां काटकर</p>
+
+        <!-- Paid vs Pending -->
+        <div class="grid grid-cols-2 gap-2 text-left">
+          <div class="bg-white/10 rounded-xl p-2 border border-white/15">
+            <span class="text-[9.5px] text-blue-200 block">🟢 भुगतान हुआ (Paid)</span>
+            <span class="text-sm font-bold text-white" id="vPaidAmount">₹0</span>
+          </div>
+          <div class="bg-white/10 rounded-xl p-2 border border-white/15">
+            <span class="text-[9.5px] text-amber-200 block">🟠 बकाया रकम (Due)</span>
+            <span class="text-sm font-bold text-amber-300" id="vPendingAmount">₹0</span>
+          </div>
+        </div>
+
+        <div class="mt-2 text-center" id="vPaymentStatusText">
+          <span class="inline-block bg-white/15 text-white text-[10px] px-2.5 py-0.5 rounded-full">हिसाब सामान्य</span>
+        </div>
+      </div>
+
+      <!-- 4 Quick Stat Badges -->
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <div class="bg-white border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+          <div class="min-w-0">
+            <span class="text-[10px] text-slate-400 block">फिक्स सैलरी</span>
+            <strong class="text-xs font-bold text-slate-800" id="vStatBase">₹0</strong>
+          </div>
+          <i class="fa-solid fa-wallet text-slate-300 text-sm"></i>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+          <div class="min-w-0">
+            <span class="text-[10px] text-slate-400 block">कुल इंसेंटिव</span>
+            <strong class="text-xs font-bold text-emerald-600" id="vStatIncentive">+₹0</strong>
+          </div>
+          <i class="fa-solid fa-gift text-emerald-300 text-sm"></i>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+          <div class="min-w-0">
+            <span class="text-[10px] text-slate-400 block">कुल कटौती</span>
+            <strong class="text-xs font-bold text-rose-600" id="vStatCut">-₹0</strong>
+          </div>
+          <i class="fa-solid fa-scissors text-rose-300 text-sm"></i>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-2.5 flex items-center justify-between">
+          <div class="min-w-0">
+            <span class="text-[10px] text-slate-400 block">एडवांस + खर्चा</span>
+            <strong class="text-xs font-bold text-amber-600" id="vStatAdv">-₹0</strong>
+          </div>
+          <i class="fa-solid fa-hand-holding-dollar text-amber-300 text-sm"></i>
+        </div>
+      </div>
+
+      <!-- Performance KPI Section -->
+      <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm mb-3">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5">
+            <span class="w-6 h-6 rounded-lg bg-blue-100 text-brand-blue flex items-center justify-center text-xs">
+              <i class="fa-solid fa-chart-line"></i>
+            </span>
+            <h6 class="text-xs font-bold text-slate-800">कार्य रिपोर्ट (Performance)</h6>
+          </div>
+          <span class="text-[10px] font-semibold text-slate-400" id="vPerfMonth">Month</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <!-- 1. Naye Grahak -->
+          <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-2.5 flex flex-col justify-between">
+            <div class="flex justify-between items-center text-emerald-700 text-[10.5px] font-bold">
+              <span><i class="fa-solid fa-user-plus mr-1"></i> नए ग्राहक</span>
+            </div>
+            <div class="text-sm font-extrabold text-slate-800 my-1" id="vTotalCust">0 ग्राहक</div>
+            <span class="text-[9.5px] text-slate-500 leading-tight" id="vCustBreakdown">0 रेगुलर + 0 अल्टरनेटिव</span>
+          </div>
+
+          <!-- 2. Missed Delivery -->
+          <div class="bg-rose-50/70 border border-rose-200 rounded-xl p-2.5 flex flex-col justify-between">
+            <div class="flex justify-between items-center text-rose-700 text-[10.5px] font-bold">
+              <span><i class="fa-solid fa-bell mr-1"></i> छूटी डिलीवरी</span>
+            </div>
+            <div class="text-sm font-extrabold text-slate-800 my-1" id="vMissedDeliveries">0 शिकायत</div>
+            <span class="text-[9.5px] text-rose-600 font-semibold" id="vMissedCutText">₹0 कटौती</span>
+          </div>
+
+          <!-- 3. Penalty -->
+          <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-2.5 flex flex-col justify-between">
+            <div class="flex justify-between items-center text-amber-700 text-[10.5px] font-bold">
+              <span><i class="fa-solid fa-shield mr-1"></i> पेनल्टी/नुकसान</span>
+            </div>
+            <div class="text-sm font-extrabold text-slate-800 my-1" id="vPenaltyAmount">₹0</div>
+            <span class="text-[9.5px] text-slate-500">लापरवाही कटौती</span>
+          </div>
+
+          <!-- 4. Attendance -->
+          <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-2.5 flex flex-col justify-between">
+            <div class="flex justify-between items-center text-blue-700 text-[10.5px] font-bold">
+              <span><i class="fa-solid fa-calendar-check mr-1"></i> हाज़िरी</span>
+            </div>
+            <div class="text-sm font-extrabold text-slate-800 my-1" id="vAttendancePercent">100%</div>
+            <span class="text-[9.5px] text-emerald-600 font-bold" id="vAttendanceBonusText">+₹200 इनाम</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: SALARY BREAKDOWN (HISAAB TAB) -->
+    <div id="view-salary" class="tab-view hidden max-w-md mx-auto pt-2">
+      <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm mb-3">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-file-invoice"></i>
+            </span>
+            <h6 class="font-bold text-xs text-slate-800">विस्तृत हिसाब विवरण</h6>
+          </div>
+          <span class="text-[10px] bg-slate-100 text-slate-600 font-semibold px-2 py-0.5 rounded-full" id="vDetailMonth">Month</span>
+        </div>
+
+        <div class="space-y-2.5 text-xs">
+          <!-- 1. Fix Salary -->
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <span class="font-medium">1. मूल फिक्स वेतन</span>
+            <strong class="font-bold text-slate-800" id="item1">₹0</strong>
+          </div>
+
+          <!-- 2. Regular Tanki -->
+          <div class="border-b border-slate-50 pb-1">
+            <div class="flex justify-between items-center cursor-pointer" onclick="toggleAccordion('regBox')">
+              <div>
+                <strong class="text-slate-800">2. नई रेगुलर टंकी इंसेंटिव</strong>
+                <i class="fa-solid fa-chevron-down text-emerald-600 text-[10px] ml-1"></i>
+                <div class="text-[10.5px] text-emerald-600" id="regCountLabel">0 टंकी • सूची देखें ▾</div>
+              </div>
+              <strong class="text-emerald-600" id="regTotalAmount">+₹0</strong>
+            </div>
+            <div id="regBox" class="bg-emerald-50/50 border border-emerald-100 rounded-xl p-2.5 mt-2 hidden max-h-40 overflow-y-auto">
+              <span class="text-[10px] font-bold text-emerald-800 block mb-1">📌 जुड़ी हुई नई रेगुलर टंकियां:</span>
+              <div id="regListItems" class="space-y-1"></div>
+            </div>
+          </div>
+
+          <!-- 3. Alternative Tanki -->
+          <div class="border-b border-slate-50 pb-1">
+            <div class="flex justify-between items-center cursor-pointer" onclick="toggleAccordion('altBox')">
+              <div>
+                <strong class="text-slate-800">3. अल्टरनेटिव टंकी इंसेंटिव</strong>
+                <i class="fa-solid fa-chevron-down text-emerald-600 text-[10px] ml-1"></i>
+                <div class="text-[10.5px] text-emerald-600" id="altCountLabel">0 टंकी • सूची देखें ▾</div>
+              </div>
+              <strong class="text-emerald-600" id="altTotalAmount">+₹0</strong>
+            </div>
+            <div id="altBox" class="bg-emerald-50/50 border border-emerald-100 rounded-xl p-2.5 mt-2 hidden max-h-40 overflow-y-auto">
+              <span class="text-[10px] font-bold text-emerald-800 block mb-1">📌 जुड़ी हुई अल्टरनेटिव टंकियां:</span>
+              <div id="altListItems" class="space-y-1"></div>
+            </div>
+          </div>
+
+          <!-- 4. Target Bonus -->
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <div>
+              <strong class="text-slate-800">4. 200 टंकी बुकिंग धमाका</strong>
+              <div class="text-[10.5px] text-slate-400">टारगेट इंसेंटिव</div>
+            </div>
+            <strong class="text-emerald-600" id="item4">+₹0</strong>
+          </div>
+
+          <!-- 5. Attendance Bonus -->
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <div>
+              <strong class="text-slate-800">5. 100% हाज़िरी इनाम</strong>
+              <div class="text-[10.5px] text-slate-400" id="item5Desc">0 छुट्टी बोनस</div>
+            </div>
+            <strong class="text-emerald-600" id="item5">+₹0</strong>
+          </div>
+
+          <!-- 6. Leave Cut -->
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <div>
+              <strong class="text-slate-800">6. छुट्टी (Leave) वेतन कटौती</strong>
+              <div class="text-[10.5px] text-slate-400" id="item6Desc">0 दिन अनुपस्थित</div>
+            </div>
+            <strong class="text-rose-600" id="item6">-₹0</strong>
+          </div>
+
+          <!-- 7. Missed Cut -->
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <div>
+              <strong class="text-slate-800">7. पानी न पहुंचाने पर कटौती</strong>
+              <div class="text-[10.5px] text-slate-400" id="item7Desc">छूटी डिलीवरी जुर्माना</div>
+            </div>
+            <strong class="text-rose-600" id="item7">-₹0</strong>
+          </div>
+
+          <!-- 8. Penalty -->
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <div>
+              <strong class="text-slate-800">8. लापरवाही पर हर्जाना</strong>
+              <div class="text-[10.5px] text-slate-400">जार गुम / लापरवाही</div>
+            </div>
+            <strong class="text-rose-600" id="item8">-₹0</strong>
+          </div>
+
+          <!-- 9. Advance -->
+          <div class="flex justify-between items-center py-1 border-b border-slate-50">
+            <div>
+              <strong class="text-slate-800">9. लिया गया एडवांस + खर्चा</strong>
+              <div class="text-[10.5px] text-slate-400">कार्यालय अग्रिम</div>
+            </div>
+            <strong class="text-rose-600" id="item9">-₹0</strong>
+          </div>
+
+          <!-- Total Final Summary -->
+          <div class="pt-2">
+            <div class="flex justify-between items-center py-1">
+              <span class="font-bold text-slate-800 text-xs">कुल शुद्ध देय (Net Payable):</span>
+              <span class="font-extrabold text-brand-blue text-sm" id="finalInHandBottom">₹0</span>
+            </div>
+            <div class="flex justify-between items-center text-[11px] text-slate-500 py-0.5">
+              <span>भुगतान हुआ (Paid):</span>
+              <strong class="text-slate-700" id="bottomPaidText">₹0</strong>
+            </div>
+            <div class="flex justify-between items-center text-[11px] py-0.5">
+              <strong class="text-amber-700">शेष बकाया (Due):</strong>
+              <strong class="text-rose-600" id="bottomDueText">₹0</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: INCREMENT POLICY & APPRAISAL TAB -->
+    <div id="view-increment" class="tab-view hidden max-w-md mx-auto pt-2">
+      <div class="bg-white rounded-2xl p-4 border border-emerald-200 shadow-sm mb-3">
+        <div class="flex items-center gap-2.5 mb-2">
+          <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-sm">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+          </span>
+          <div>
+            <h6 class="font-bold text-xs text-slate-800 leading-tight">वार्षिक वेतन वृद्धि नीति (Increment)</h6>
+            <span class="text-[9.5px] text-slate-400">Annual Appraisal & Career Growth</span>
+          </div>
+        </div>
+
+        <p class="text-slate-600 text-[11.5px] mb-3 leading-relaxed">
+          भारत पेयजल में आपकी निष्ठा और सेवा का सम्मान करते हुए वार्षिक वेतन वृद्धि की जाती है। <strong>सैलरी इंक्रीमेंट</strong> के लिए निम्नलिखित <strong>2 अनिवार्य शर्तें</strong> हैं:
+        </p>
+
+        <!-- Condition 1 -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex gap-2.5 mb-2">
+          <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">1</div>
+          <div class="min-w-0">
+            <div class="flex justify-between items-center mb-0.5">
+              <strong class="text-xs text-slate-800">1 वर्ष का पूर्ण सेवाकाल</strong>
+              <span class="text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">12 माह</span>
+            </div>
+            <p class="text-[11px] text-slate-500 leading-snug">
+              कम से कम 1 वर्ष (12 माह) का निरंतर, अनुशासित एवं समर्पित कार्यकाल पूरा होना आवश्यक है।
+            </p>
+          </div>
+        </div>
+
+        <!-- Condition 2 -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex gap-2.5 mb-3">
+          <div class="w-6 h-6 rounded-full bg-blue-100 text-brand-blue flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">2</div>
+          <div class="min-w-0">
+            <div class="flex justify-between items-center mb-0.5">
+              <strong class="text-xs text-slate-800">न्यूनतम 36 नए ग्राहक</strong>
+              <span class="text-[9px] bg-blue-100 text-brand-blue px-1.5 py-0.5 rounded">36 ग्राहक/वर्ष</span>
+            </div>
+            <p class="text-[11px] text-slate-500 leading-snug">
+              पूरे सेवा वर्ष के दौरान न्यूनतम 36 नए सक्रिय ग्राहक जोड़ना अनिवार्य है (औसतन केवल 3 ग्राहक प्रति माह)।
+            </p>
+          </div>
+        </div>
+
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5 flex items-center gap-2">
+          <i class="fa-solid fa-circle-check text-emerald-600 text-sm shrink-0"></i>
+          <p class="text-[10.5px] text-emerald-900 leading-tight">
+            दोनों शर्तें पूर्ण होने पर वार्षिक समीक्षा में आपकी सैलरी में सम्मानजनक वृद्धि (Increment) की जाएगी।
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================= 4. APP BOTTOM NAVIGATION BAR (EXACTLY 3 TABS) ================= -->
+  <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around z-30 px-2 shadow-lg">
+    <!-- Tab 1: Dashboard -->
+    <button class="nav-tab active flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition" onclick="navigateTab('tab-dashboard')" id="btn-tab-dashboard">
+      <i class="fa-solid fa-house text-base mb-0.5"></i>
+      <span class="text-[10px] font-bold">डैशबोर्ड</span>
+    </button>
+
+    <!-- Tab 2: Salary Hisaab -->
+    <button class="nav-tab flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition" onclick="navigateTab('tab-salary')" id="btn-tab-salary">
+      <i class="fa-solid fa-wallet text-base mb-0.5"></i>
+      <span class="text-[10px] font-bold">वेतन हिसाब</span>
+    </button>
+
+    <!-- Tab 3: Increment Policy -->
+    <button class="nav-tab flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition" onclick="navigateTab('tab-increment')" id="btn-tab-increment">
+      <i class="fa-solid fa-award text-base mb-0.5"></i>
+      <span class="text-[10px] font-bold">इंक्रीमेंट नियम</span>
+    </button>
+  </nav>
+
+  <!-- ================= 5. LOGIN MODAL / SCREEN (APP STYLE) ================= -->
+  <div id="loginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl p-5 shadow-2xl relative border border-slate-100">
+      
+      <div class="text-center mb-4">
+        <div class="w-14 h-14 bg-blue-50 text-brand-blue rounded-2xl flex items-center justify-center mx-auto mb-2 text-2xl shadow-sm">
+          <i class="fa-solid fa-user-shield text-brand-aqua"></i>
+        </div>
+        <h4 class="font-extrabold text-slate-800 text-lg">जल मित्र लॉगिन</h4>
+        <p class="text-xs text-slate-500">मोबाइल नंबर या Staff ID और PIN दर्ज करें</p>
+      </div>
+
+      <!-- ID Input -->
+      <div class="mb-3">
+        <label class="block text-[11px] font-bold text-slate-600 mb-1">मोबाइल नंबर या STAFF ID</label>
+        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-brand-blue focus-within:bg-white transition">
+          <i class="fa-solid fa-phone text-slate-400 text-xs mr-2"></i>
+          <input type="text" id="inputId" class="w-full bg-transparent text-xs sm:text-sm font-semibold outline-none text-slate-800" placeholder="उदा: 7860393191 या BP001">
+        </div>
+      </div>
+
+      <!-- PIN Input -->
+      <div class="mb-3">
+        <label class="block text-[11px] font-bold text-slate-600 mb-1">4-अंकों का PIN</label>
+        <div class="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:border-brand-blue focus-within:bg-white transition">
+          <i class="fa-solid fa-lock text-slate-400 text-xs mr-2"></i>
+          <input type="password" id="inputPin" class="w-full bg-transparent text-center tracking-widest text-sm font-bold outline-none text-slate-800" maxlength="6" placeholder="••••" inputmode="numeric">
+          <button type="button" class="text-slate-400 hover:text-slate-600 p-1" onclick="togglePinVisibility()">
+            <i class="fa-solid fa-eye text-xs" id="eyeIcon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Remember Me -->
+      <div class="flex items-center justify-between mb-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="rememberMeCheck" checked class="w-4 h-4 text-brand-blue rounded border-slate-300">
+          <span class="text-[11px] font-medium text-slate-600">मुझे याद रखें (Auto-Login)</span>
+        </label>
+        <span class="text-[10px] text-slate-400">सुरक्षित 🔒</span>
+      </div>
+
+      <!-- Error Message -->
+      <div id="loginErr" class="hidden mb-3 p-2 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl text-center font-medium"></div>
+
+      <!-- Login Button -->
+      <button id="loginBtn" class="w-full bg-brand-blue hover:bg-blue-900 active:scale-95 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5" onclick="doLogin()">
+        <span>डैशबोर्ड खोलें</span>
+        <i class="fa-solid fa-arrow-right text-xs"></i>
+      </button>
+
+      <!-- Dismiss Button (if user cancels) -->
+      <button id="dismissLoginBtn" class="hidden w-full mt-2 text-slate-400 text-[11px] font-semibold text-center py-1" onclick="hideLoginModal()">
+        रद्द करें
+      </button>
+    </div>
+  </div>
+
+  <!-- External App JS -->
+  <script src="app.js"></script>
+</body>
+</html>

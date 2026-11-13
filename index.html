@@ -48,9 +48,38 @@
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 antialiased h-full flex flex-col select-none overflow-x-hidden">
 
-  <!-- ================= 0. SPLASH SCREEN (100% FULL SCREEN FIX) ================= -->
+  <!-- ================= 0. SPLASH SCREEN (ORIGINAL DESIGN) ================= -->
   <div id="splashScreen" class="splash-screen">
-    <img src="splash-logo.png" alt="जल मित्र" class="splash-full-img">
+    <div class="splash-content">
+      <div class="splash-badge-box">
+        <img src="splash-logo.png" alt="जल मित्र" class="splash-logo-img">
+      </div>
+
+      <div class="splash-loader-wrapper">
+        <div class="segmented-bar">
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+          <div class="segment"></div>
+        </div>
+        <p class="splash-loading-text">LOADING...</p>
+      </div>
+    </div>
+
+    <div class="splash-footer">
+      <span class="powered-by">Powered by</span>
+      <div class="powered-brand">Bharat Peyjal</div>
+    </div>
+
+    <div class="splash-orange-strip"></div>
   </div>
 
   <!-- ================= 1. APP TOP BAR (FIXED) ================= -->
