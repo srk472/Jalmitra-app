@@ -159,7 +159,7 @@ button:active {
 }
 
 /* ===================================================
-   10. SPLASH SCREEN (EXACT MATCH TO ATTACHED IMAGE 2)
+   10. SPLASH SCREEN (EXACT MATCH TO ORIGINAL DESIGN)
    =================================================== */
 .splash-screen {
   position: fixed;
@@ -276,4 +276,265 @@ button:active {
   width: 100%;
   height: 14px;
   background-color: #ff6a13;
+}
+
+/* ===================================================
+   11. DIGITAL EMPLOYEE ID CARD (CORPORATE IDENTITY)
+   =================================================== */
+
+/* Modal Pop-In Animation */
+#idCardModal > div {
+  animation: idCardPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes idCardPop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Official Corporate Card Shell */
+.id-card-shell {
+  box-shadow: 0 22px 45px -12px rgba(0, 35, 80, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15);
+  background-color: #ffffff;
+}
+
+/* Safe Devanagari Line Height inside ID Card */
+.id-card-shell #idCardName {
+  line-height: 1.4;
+}
+
+/* Subtle Watermark Pattern on Header */
+.id-card-shell > div:nth-child(2)::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 14px 14px;
+  pointer-events: none;
+}
+
+/* Active Green Dot Pulse inside Card */
+.id-card-shell .bg-emerald-500.rounded-full.inline-block {
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.65);
+  animation: statusPulse 1.8s infinite;
+}
+
+@keyframes statusPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.65);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+/* Clean Snapshot Mode during PNG Export */
+.id-card-capturing {
+  box-shadow: none !important;
+  border-radius: 20px !important;
+  transform: none !important;
+}
+
+.id-card-capturing *,
+.id-card-capturing *::before,
+.id-card-capturing *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ===================================================
+   12. LIVE INCREMENT PROGRESS BAR & TRACKER CARD
+   =================================================== */
+.inc-tracker-card {
+  box-shadow: 0 10px 26px -10px rgba(0, 51, 102, 0.16);
+}
+
+#dashIncrementCard {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+#dashIncrementCard:active {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+/* Smooth Animated Progress Bar Fill */
+.inc-progress-fill {
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  transition: width 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Subtle Shine Sweep Across Progress Bar */
+.inc-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.42) 50%,
+    transparent 100%
+  );
+  animation: progressShine 2.6s infinite ease-in-out;
+  pointer-events: none;
+}
+
+@keyframes progressShine {
+  0% {
+    left: -60%;
+  }
+  55%, 100% {
+    left: 130%;
+  }
+}
+
+/* ===================================================
+   13. OFFICIAL SALARY SLIP (PAYSLIP) & PRINT STYLES
+   =================================================== */
+#salarySlipModal > div {
+  animation: payslipPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes payslipPop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.payslip-sheet {
+  box-shadow: 0 22px 45px -12px rgba(0, 35, 80, 0.38);
+  background-color: #ffffff;
+}
+
+/* Crisp Wide Layout during HD PNG Export */
+.payslip-capturing {
+  box-shadow: none !important;
+  border-radius: 16px !important;
+  transform: none !important;
+}
+
+.payslip-capturing > div:nth-child(2) {
+  padding: 24px !important;
+}
+
+.payslip-capturing .payslip-col-heading {
+  font-size: 11px !important;
+}
+
+.payslip-capturing .payslip-col-text {
+  font-size: 11.5px !important;
+}
+
+.payslip-capturing .payslip-col-text span {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+.payslip-capturing .payslip-net-val {
+  font-size: 24px !important;
+}
+
+.payslip-capturing *,
+.payslip-capturing *::before,
+.payslip-capturing *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Clean A4 PDF / Print Output for Salary Slip */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body.printing-payslip {
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.printing-payslip > header,
+  body.printing-payslip > nav,
+  body.printing-payslip > aside,
+  body.printing-payslip > main,
+  body.printing-payslip > #sidebarBackdrop,
+  body.printing-payslip > #loginModal,
+  body.printing-payslip > #idCardModal,
+  body.printing-payslip > #splashScreen {
+    display: none !important;
+  }
+
+  body.printing-payslip #salarySlipModal {
+    position: static !important;
+    display: block !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body.printing-payslip #salarySlipModal > div {
+    max-width: 650px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    animation: none !important;
+    transform: none !important;
+  }
+
+  body.printing-payslip #salarySlipModal > div > *:not(#salarySlipCapture) {
+    display: none !important;
+  }
+
+  body.printing-payslip #salarySlipCapture {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 16px !important;
+  }
+
+  body.printing-payslip #salarySlipCapture > div:nth-child(2) {
+    padding: 24px !important;
+  }
+
+  body.printing-payslip .payslip-col-heading {
+    font-size: 11.5px !important;
+  }
+
+  body.printing-payslip .payslip-col-text {
+    font-size: 12px !important;
+  }
+
+  body.printing-payslip .payslip-col-text span {
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  body.printing-payslip .payslip-net-val {
+    font-size: 26px !important;
+  }
 }
