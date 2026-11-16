@@ -48,6 +48,9 @@
 </head>
 <body class="bg-slate-100 font-sans text-slate-800 antialiased h-full flex flex-col select-none overflow-x-hidden">
 
+  <!-- Hidden Profile Photo Picker (Gallery / Camera) -->
+  <input type="file" id="profilePhotoInput" accept="image/*" class="hidden" onchange="handleProfilePhotoUpload(event)">
+
   <!-- ================= 0. SPLASH SCREEN (ORIGINAL DESIGN) ================= -->
   <div id="splashScreen" class="splash-screen">
     <div class="splash-content">
@@ -125,12 +128,21 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl border border-white/20">
-          🙏
-        </div>
-        <div class="min-w-0">
+        <button type="button" onclick="triggerProfilePhotoPicker()" title="प्रोफ़ाइल फोटो बदलें" class="relative w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl border border-white/30 shrink-0 active:scale-95 transition">
+          <img id="sideProfilePhoto" src="" alt="Profile" class="w-full h-full object-cover rounded-2xl hidden">
+          <span id="sideProfileEmoji">🙏</span>
+          <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-400 text-slate-900 border-2 border-[#0284c7] flex items-center justify-center text-[9px] shadow">
+            <i class="fa-solid fa-camera"></i>
+          </span>
+        </button>
+        <div class="min-w-0 flex-1">
           <h4 id="sideStaffName" class="font-bold text-base leading-snug truncate">लॉगिन नहीं हैं</h4>
-          <span id="sideStaffId" class="inline-block text-[11px] bg-white/20 px-2 py-0.5 rounded font-mono">ID: ----</span>
+          <div class="flex items-center gap-1.5 flex-wrap mt-0.5">
+            <span id="sideStaffId" class="inline-block text-[11px] bg-white/20 px-2 py-0.5 rounded font-mono">ID: ----</span>
+            <button type="button" onclick="triggerProfilePhotoPicker()" class="text-[10px] bg-white/20 hover:bg-white/30 text-white px-2 py-0.5 rounded-full font-semibold transition">
+              <i class="fa-solid fa-camera text-[9px] mr-0.5"></i> फोटो बदलें
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -208,10 +220,11 @@
       <!-- User Profile Header & Month Dropdown -->
       <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm mb-3">
         <div class="flex items-center justify-between mb-2.5">
-          <div class="flex items-center gap-2 min-w-0">
-            <span class="w-8 h-8 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center text-sm font-bold shrink-0">
-              <i class="fa-solid fa-user"></i>
-            </span>
+          <div class="flex items-center gap-2.5 min-w-0">
+            <button type="button" onclick="triggerProfilePhotoPicker()" title="प्रोफ़ाइल फोटो बदलें" class="relative w-9 h-9 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden border border-blue-200/80 active:scale-95 transition">
+              <img id="dashProfilePhoto" src="" alt="Profile" class="w-full h-full object-cover hidden">
+              <i id="dashProfileIcon" class="fa-solid fa-user"></i>
+            </button>
             <div class="min-w-0">
               <h5 class="text-xs font-bold text-slate-800 truncate" id="vStaffName">नमस्ते, अतिथि</h5>
               <p class="text-[10px] text-slate-500 font-medium leading-none" id="vStaffId">ID: BP---</p>
@@ -854,8 +867,19 @@
         </div>
       </div>
 
+      <!-- Profile Photo Upload Bar (Outside Capture Area so ID stays clean) -->
+      <div class="flex items-center justify-center gap-2 mt-2.5">
+        <button type="button" onclick="triggerProfilePhotoPicker()" class="flex-1 bg-amber-400 hover:bg-amber-300 active:scale-95 text-slate-900 py-2 px-3 rounded-xl font-bold text-xs shadow flex items-center justify-center gap-1.5 transition">
+          <i class="fa-solid fa-camera"></i>
+          <span id="idPhotoBtnLabel">ID कार्ड पर अपनी फोटो लगाएं</span>
+        </button>
+        <button id="removePhotoBtn" type="button" onclick="removeProfilePhoto()" class="hidden bg-rose-500/90 hover:bg-rose-600 active:scale-95 text-white py-2 px-3 rounded-xl font-bold text-xs shadow items-center justify-center gap-1 transition" title="फोटो हटाएं">
+          <i class="fa-solid fa-trash-can"></i>
+        </button>
+      </div>
+
       <!-- Card Action Buttons (Download / Share) -->
-      <div class="grid grid-cols-2 gap-2.5 mt-3">
+      <div class="grid grid-cols-2 gap-2.5 mt-2">
         <button id="downloadIdBtn" type="button" onclick="downloadIdCard()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white py-2.5 px-3 rounded-xl font-bold text-xs shadow-lg flex items-center justify-center gap-1.5 transition">
           <i class="fa-solid fa-download"></i>
           <span>ID डाउनलोड करें</span>

@@ -154,6 +154,163 @@ function togglePinVisibility() {
   }
 }
 
+// ================= 5B. LOCAL PROFILE PHOTO SYSTEM (NO SERVER LOAD) =================
+function getStaffPhotoKey(staffId) {
+  const clean = String(staffId || '').trim().toUpperCase();
+  return clean && clean !== 'BP---' ? `bp_profile_photo_${clean}` : '';
+}
+
+function getSavedStaffPhoto(staffId) {
+  const key = getStaffPhotoKey(staffId);
+  if (!key) return '';
+  try {
+    return localStorage.getItem(key) || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function applyProfilePhotoUI() {
+  const activePhoto = currentStaff.photo || "";
+
+  // 1. Dashboard Header Avatar
+  const dashPhoto = document.getElementById('dashProfilePhoto');
+  const dashIcon = document.getElementById('dashProfileIcon');
+  if (dashPhoto && dashIcon) {
+    if (activePhoto) {
+      dashPhoto.src = activePhoto;
+      dashPhoto.classList.remove('hidden');
+      dashIcon.classList.add('hidden');
+    } else {
+      dashPhoto.src = "";
+      dashPhoto.classList.add('hidden');
+      dashIcon.classList.remove('hidden');
+    }
+  }
+
+  // 2. Sidebar Profile Avatar
+  const sidePhoto = document.getElementById('sideProfilePhoto');
+  const sideEmoji = document.getElementById('sideProfileEmoji');
+  if (sidePhoto && sideEmoji) {
+    if (activePhoto) {
+      sidePhoto.src = activePhoto;
+      sidePhoto.classList.remove('hidden');
+      sideEmoji.classList.add('hidden');
+    } else {
+      sidePhoto.src = "";
+      sidePhoto.classList.add('hidden');
+      sideEmoji.classList.remove('hidden');
+    }
+  }
+
+  // 3. Digital ID Card Avatar & Buttons
+  const idAvatar = document.getElementById('idCardAvatar');
+  if (idAvatar) {
+    idAvatar.src = activePhoto ? activePhoto : "app-icon.png";
+    idAvatar.onerror = () => {
+      idAvatar.src = "app-icon.png";
+    };
+  }
+
+  const idPhotoBtnLabel = document.getElementById('idPhotoBtnLabel');
+  if (idPhotoBtnLabel) {
+    idPhotoBtnLabel.textContent = activePhoto ? "फोटो बदलें" : "ID कार्ड पर अपनी फोटो लगाएं";
+  }
+
+  const removeBtn = document.getElementById('removePhotoBtn');
+  if (removeBtn) {
+    if (activePhoto) {
+      removeBtn.classList.remove('hidden');
+      removeBtn.classList.add('flex');
+    } else {
+      removeBtn.classList.add('hidden');
+      removeBtn.classList.remove('flex');
+    }
+  }
+}
+
+function triggerProfilePhotoPicker() {
+  if (!isLoggedIn) {
+    showLoginModal(false);
+    return;
+  }
+  const input = document.getElementById('profilePhotoInput');
+  if (input) {
+    input.value = '';
+    input.click();
+  }
+}
+
+function resizeAndCropSquareImage(file, size = 300) {
+  return new Promise((resolve, reject) => {
+    const objUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        const minSide = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
+        const sx = Math.floor(((img.naturalWidth || img.width) - minSide) / 2);
+        const sy = Math.floor(((img.naturalHeight || img.height) - minSide) / 2);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        URL.revokeObjectURL(objUrl);
+        resolve(dataUrl);
+      } catch (err) {
+        URL.revokeObjectURL(objUrl);
+        reject(err);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objUrl);
+      reject(new Error("फोटो लोड नहीं हो सकी। कृपया कोई दूसरी फोटो चुनें।"));
+    };
+
+    img.src = objUrl;
+  });
+}
+
+async function handleProfilePhotoUpload(event) {
+  const file = event && event.target && event.target.files ? event.target.files[0] : null;
+  if (!file) return;
+
+  if (!file.type || !file.type.startsWith('image/')) {
+    alert("कृपया केवल फोटो (JPG/PNG) फाइल ही चुनें!");
+    return;
+  }
+
+  try {
+    const compressedDataUrl = await resizeAndCropSquareImage(file, 300);
+    const key = getStaffPhotoKey(currentStaff.id);
+    if (key) {
+      localStorage.setItem(key, compressedDataUrl);
+    }
+    currentStaff.photo = compressedDataUrl;
+    applyProfilePhotoUI();
+  } catch (err) {
+    alert("फोटो सेव करने में समस्या आई: " + err.message);
+  }
+}
+
+function removeProfilePhoto() {
+  if (!isLoggedIn) return;
+  const key = getStaffPhotoKey(currentStaff.id);
+  if (key) {
+    localStorage.removeItem(key);
+  }
+  currentStaff.photo = "";
+  applyProfilePhotoUI();
+}
+
 // ================= 6. AUTHENTICATION & API LOGIN =================
 function doLogin(isAutoLogin = false) {
   const idVal = document.getElementById('inputId').value.trim();
@@ -226,21 +383,25 @@ function doLogin(isAutoLogin = false) {
         detectedPhone = String(rawPhone);
       }
 
+      const staffIdResolved = apiStaff.id || idVal;
+      const savedLocalPhoto = getSavedStaffPhoto(staffIdResolved);
+
       currentStaff = {
         name: apiStaff.name || idVal,
-        id: apiStaff.id || idVal,
+        id: staffIdResolved,
         phone: detectedPhone,
-        photo: apiStaff.photo || "",
+        photo: savedLocalPhoto || apiStaff.photo || "",
         dob: apiStaff.dob || "",
         joiningDate: apiStaff.joiningDate || apiStaff.joinDate || "",
         joiningDateDisplay: apiStaff.joiningDateDisplay || ""
       };
 
-      // Update Header & Sidebar UI
+      // Update Header, Sidebar & Profile Photos
       document.getElementById('vStaffName').textContent = currentStaff.name;
       document.getElementById('vStaffId').textContent = "ID: " + currentStaff.id;
       document.getElementById('sideStaffName').textContent = currentStaff.name;
       document.getElementById('sideStaffId').textContent = "ID: " + currentStaff.id;
+      applyProfilePhotoUI();
 
       document.getElementById('headerBadge').classList.remove('hidden');
       document.getElementById('headerBadge').classList.add('flex');
@@ -652,7 +813,6 @@ function syncIdCardData() {
   const dobEl = document.getElementById('idCardDob');
   const joinEl = document.getElementById('idCardJoinDate');
   const monthEl = document.getElementById('idCardMonth');
-  const avatarEl = document.getElementById('idCardAvatar');
 
   if (nameEl) nameEl.textContent = currentStaff.name || "जल मित्र";
   if (idEl) idEl.textContent = currentStaff.id || "BP---";
@@ -661,12 +821,7 @@ function syncIdCardData() {
   if (joinEl) joinEl.textContent = currentStaff.joiningDateDisplay || "----";
   if (monthEl) monthEl.textContent = currentSelectedMonth || "सत्यापित सदस्य";
 
-  if (avatarEl) {
-    avatarEl.src = currentStaff.photo ? currentStaff.photo : "app-icon.png";
-    avatarEl.onerror = () => {
-      avatarEl.src = "app-icon.png";
-    };
-  }
+  applyProfilePhotoUI();
 }
 
 function openIdCardModal() {
@@ -1152,6 +1307,7 @@ function logout() {
     targetMonths: 12
   };
   updateIncrementProgress();
+  applyProfilePhotoUI();
 
   // Reset Profile Text
   document.getElementById('vStaffName').textContent = "नमस्ते, अतिथि";
