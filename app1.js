@@ -9,6 +9,8 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxTzRuoHBEUEM9GJSLFwxMw
 // Global App State
 let globalMonthMap = {};
 let globalMonthList = [];
+let globalBookings = [];
+let currentBookingFilter = 'Pending';
 let currentStaff = {
   name: "अतिथि",
   id: "BP---",
@@ -69,16 +71,18 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ================= 3. 3-TAB BOTTOM NAVIGATION SYSTEM =================
+// ================= 3. 4-TAB BOTTOM NAVIGATION SYSTEM =================
 function navigateTab(tabKey) {
   const views = {
     'tab-dashboard': document.getElementById('view-dashboard'),
+    'tab-bookings': document.getElementById('view-bookings'),
     'tab-salary': document.getElementById('view-salary'),
     'tab-increment': document.getElementById('view-increment')
   };
 
   const buttons = {
     'tab-dashboard': document.getElementById('btn-tab-dashboard'),
+    'tab-bookings': document.getElementById('btn-tab-bookings'),
     'tab-salary': document.getElementById('btn-tab-salary'),
     'tab-increment': document.getElementById('btn-tab-increment')
   };
@@ -104,6 +108,10 @@ function navigateTab(tabKey) {
   // Re-trigger smooth bar fill animation when opening Increment tab
   if (tabKey === 'tab-increment') {
     animateIncrementBars();
+  }
+
+  if (tabKey === 'tab-bookings') {
+    renderBookings();
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -152,6 +160,163 @@ function togglePinVisibility() {
     eyeIcon.classList.remove('fa-eye-slash');
     eyeIcon.classList.add('fa-eye');
   }
+}
+
+// ================= 5B. LOCAL PROFILE PHOTO SYSTEM (NO SERVER LOAD) =================
+function getStaffPhotoKey(staffId) {
+  const clean = String(staffId || '').trim().toUpperCase();
+  return clean && clean !== 'BP---' ? `bp_profile_photo_${clean}` : '';
+}
+
+function getSavedStaffPhoto(staffId) {
+  const key = getStaffPhotoKey(staffId);
+  if (!key) return '';
+  try {
+    return localStorage.getItem(key) || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+function applyProfilePhotoUI() {
+  const activePhoto = currentStaff.photo || "";
+
+  // 1. Dashboard Header Avatar
+  const dashPhoto = document.getElementById('dashProfilePhoto');
+  const dashIcon = document.getElementById('dashProfileIcon');
+  if (dashPhoto && dashIcon) {
+    if (activePhoto) {
+      dashPhoto.src = activePhoto;
+      dashPhoto.classList.remove('hidden');
+      dashIcon.classList.add('hidden');
+    } else {
+      dashPhoto.src = "";
+      dashPhoto.classList.add('hidden');
+      dashIcon.classList.remove('hidden');
+    }
+  }
+
+  // 2. Sidebar Profile Avatar
+  const sidePhoto = document.getElementById('sideProfilePhoto');
+  const sideEmoji = document.getElementById('sideProfileEmoji');
+  if (sidePhoto && sideEmoji) {
+    if (activePhoto) {
+      sidePhoto.src = activePhoto;
+      sidePhoto.classList.remove('hidden');
+      sideEmoji.classList.add('hidden');
+    } else {
+      sidePhoto.src = "";
+      sidePhoto.classList.add('hidden');
+      sideEmoji.classList.remove('hidden');
+    }
+  }
+
+  // 3. Digital ID Card Avatar & Buttons
+  const idAvatar = document.getElementById('idCardAvatar');
+  if (idAvatar) {
+    idAvatar.src = activePhoto ? activePhoto : "app-icon.png";
+    idAvatar.onerror = () => {
+      idAvatar.src = "app-icon.png";
+    };
+  }
+
+  const idPhotoBtnLabel = document.getElementById('idPhotoBtnLabel');
+  if (idPhotoBtnLabel) {
+    idPhotoBtnLabel.textContent = activePhoto ? "फोटो बदलें" : "ID कार्ड पर अपनी फोटो लगाएं";
+  }
+
+  const removeBtn = document.getElementById('removePhotoBtn');
+  if (removeBtn) {
+    if (activePhoto) {
+      removeBtn.classList.remove('hidden');
+      removeBtn.classList.add('flex');
+    } else {
+      removeBtn.classList.add('hidden');
+      removeBtn.classList.remove('flex');
+    }
+  }
+}
+
+function triggerProfilePhotoPicker() {
+  if (!isLoggedIn) {
+    showLoginModal(false);
+    return;
+  }
+  const input = document.getElementById('profilePhotoInput');
+  if (input) {
+    input.value = '';
+    input.click();
+  }
+}
+
+function resizeAndCropSquareImage(file, size = 300) {
+  return new Promise((resolve, reject) => {
+    const objUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      try {
+        const minSide = Math.min(img.naturalWidth || img.width, img.naturalHeight || img.height);
+        const sx = Math.floor(((img.naturalWidth || img.width) - minSide) / 2);
+        const sy = Math.floor(((img.naturalHeight || img.height) - minSide) / 2);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        URL.revokeObjectURL(objUrl);
+        resolve(dataUrl);
+      } catch (err) {
+        URL.revokeObjectURL(objUrl);
+        reject(err);
+      }
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(objUrl);
+      reject(new Error("फोटो लोड नहीं हो सकी। कृपया कोई दूसरी फोटो चुनें।"));
+    };
+
+    img.src = objUrl;
+  });
+}
+
+async function handleProfilePhotoUpload(event) {
+  const file = event && event.target && event.target.files ? event.target.files[0] : null;
+  if (!file) return;
+
+  if (!file.type || !file.type.startsWith('image/')) {
+    alert("कृपया केवल फोटो (JPG/PNG) फाइल ही चुनें!");
+    return;
+  }
+
+  try {
+    const compressedDataUrl = await resizeAndCropSquareImage(file, 300);
+    const key = getStaffPhotoKey(currentStaff.id);
+    if (key) {
+      localStorage.setItem(key, compressedDataUrl);
+    }
+    currentStaff.photo = compressedDataUrl;
+    applyProfilePhotoUI();
+  } catch (err) {
+    alert("फोटो सेव करने में समस्या आई: " + err.message);
+  }
+}
+
+function removeProfilePhoto() {
+  if (!isLoggedIn) return;
+  const key = getStaffPhotoKey(currentStaff.id);
+  if (key) {
+    localStorage.removeItem(key);
+  }
+  currentStaff.photo = "";
+  applyProfilePhotoUI();
 }
 
 // ================= 6. AUTHENTICATION & API LOGIN =================
@@ -226,21 +391,25 @@ function doLogin(isAutoLogin = false) {
         detectedPhone = String(rawPhone);
       }
 
+      const staffIdResolved = apiStaff.id || idVal;
+      const savedLocalPhoto = getSavedStaffPhoto(staffIdResolved);
+
       currentStaff = {
         name: apiStaff.name || idVal,
-        id: apiStaff.id || idVal,
+        id: staffIdResolved,
         phone: detectedPhone,
-        photo: apiStaff.photo || "",
+        photo: savedLocalPhoto || apiStaff.photo || "",
         dob: apiStaff.dob || "",
         joiningDate: apiStaff.joiningDate || apiStaff.joinDate || "",
         joiningDateDisplay: apiStaff.joiningDateDisplay || ""
       };
 
-      // Update Header & Sidebar UI
+      // Update Header, Sidebar & Profile Photos
       document.getElementById('vStaffName').textContent = currentStaff.name;
       document.getElementById('vStaffId').textContent = "ID: " + currentStaff.id;
       document.getElementById('sideStaffName').textContent = currentStaff.name;
       document.getElementById('sideStaffId').textContent = "ID: " + currentStaff.id;
+      applyProfilePhotoUI();
 
       document.getElementById('headerBadge').classList.remove('hidden');
       document.getElementById('headerBadge').classList.add('flex');
@@ -265,6 +434,12 @@ function doLogin(isAutoLogin = false) {
       mSelect.value = defaultM;
       currentSelectedMonth = defaultM;
       renderMonthData(defaultM);
+
+      // Load & Render Wedding / Function Bookings
+      globalBookings = Array.isArray(res.bookings) ? res.bookings : [];
+      currentBookingFilter = 'Pending';
+      updateBookingBadgesAndAlert();
+      setBookingFilter('Pending');
 
       // Update Live Increment Progress Bars
       calculateIncrementProgress(res);
@@ -434,6 +609,250 @@ function renderList(targetId, list) {
 function toggleAccordion(id) {
   const el = document.getElementById(id);
   el.classList.toggle('hidden');
+}
+
+// ================= 7A. WEDDING / FUNCTION BOOKINGS SYSTEM =================
+function getTodayIsoLocal() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function updateBookingBadgesAndAlert() {
+  const todayIso = getTodayIsoLocal();
+  const pendingList = globalBookings.filter(b => b.status !== 'Delivered');
+  const pendingCount = pendingList.length;
+  const todayCount = pendingList.filter(b => b.deliveryDateIso === todayIso).length;
+
+  // 1. Bottom Nav Badge
+  const navBadge = document.getElementById('navBookingBadge');
+  if (navBadge) {
+    if (pendingCount > 0) {
+      navBadge.textContent = pendingCount;
+      navBadge.classList.remove('hidden');
+      navBadge.classList.add('inline-flex');
+    } else {
+      navBadge.classList.add('hidden');
+      navBadge.classList.remove('inline-flex');
+    }
+  }
+
+  // 2. Sidebar Badge
+  const sideBadge = document.getElementById('sideBookingBadge');
+  if (sideBadge) {
+    if (pendingCount > 0) {
+      sideBadge.textContent = pendingCount;
+      sideBadge.classList.remove('hidden');
+    } else {
+      sideBadge.classList.add('hidden');
+    }
+  }
+
+  // 3. Dashboard Alert Strip
+  const alertBox = document.getElementById('dashBookingAlert');
+  const alertText = document.getElementById('dashBookingAlertText');
+  if (alertBox && alertText) {
+    if (pendingCount > 0) {
+      if (todayCount > 0) {
+        alertText.textContent = `🔥 आज ${todayCount} बुकिंग की डिलीवरी है! (कुल पेंडिंग: ${pendingCount})`;
+      } else {
+        alertText.textContent = `आपकी ${pendingCount} आगामी शादी / फंक्शन बुकिंग पेंडिंग हैं`;
+      }
+      alertBox.classList.remove('hidden');
+      alertBox.classList.add('flex');
+    } else {
+      alertBox.classList.add('hidden');
+      alertBox.classList.remove('flex');
+    }
+  }
+}
+
+function setBookingFilter(filter) {
+  currentBookingFilter = (filter === 'Delivered') ? 'Delivered' : 'Pending';
+
+  const pendingBtn = document.getElementById('bookingFilterPending');
+  const deliveredBtn = document.getElementById('bookingFilterDelivered');
+  const pendingCountBadge = document.getElementById('bookingFilterPendingCount');
+  const deliveredCountBadge = document.getElementById('bookingFilterDeliveredCount');
+
+  if (pendingBtn && deliveredBtn) {
+    if (currentBookingFilter === 'Pending') {
+      pendingBtn.className = "py-1.5 px-3 rounded-xl text-xs font-bold bg-white text-brand-blue shadow-sm transition flex items-center justify-center gap-1.5";
+      deliveredBtn.className = "py-1.5 px-3 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 transition flex items-center justify-center gap-1.5";
+      if (pendingCountBadge) pendingCountBadge.className = "bg-amber-400 text-slate-900 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full";
+      if (deliveredCountBadge) deliveredCountBadge.className = "bg-white/25 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full";
+    } else {
+      deliveredBtn.className = "py-1.5 px-3 rounded-xl text-xs font-bold bg-white text-brand-blue shadow-sm transition flex items-center justify-center gap-1.5";
+      pendingBtn.className = "py-1.5 px-3 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 transition flex items-center justify-center gap-1.5";
+      if (deliveredCountBadge) deliveredCountBadge.className = "bg-emerald-500 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full";
+      if (pendingCountBadge) pendingCountBadge.className = "bg-white/25 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full";
+    }
+  }
+
+  renderBookings();
+}
+
+function renderBookings() {
+  const container = document.getElementById('bookingsListContainer');
+  const emptyBox = document.getElementById('bookingsEmptyBox');
+  const emptyText = document.getElementById('bookingsEmptyText');
+  if (!container || !emptyBox) return;
+
+  const pendingList = globalBookings.filter(b => b.status !== 'Delivered');
+  const deliveredList = globalBookings.filter(b => b.status === 'Delivered');
+
+  const pCountEl = document.getElementById('bookingFilterPendingCount');
+  const dCountEl = document.getElementById('bookingFilterDeliveredCount');
+  if (pCountEl) pCountEl.textContent = pendingList.length;
+  if (dCountEl) dCountEl.textContent = deliveredList.length;
+
+  const listToShow = (currentBookingFilter === 'Delivered') ? deliveredList : pendingList;
+
+  container.innerHTML = '';
+
+  if (listToShow.length === 0) {
+    emptyBox.classList.remove('hidden');
+    if (emptyText) {
+      emptyText.textContent = (currentBookingFilter === 'Delivered')
+        ? "अभी कोई पूरी हुई बुकिंग दर्ज नहीं है।"
+        : "अभी कोई आगामी शादी या फंक्शन बुकिंग पेंडिंग नहीं है।";
+    }
+    return;
+  }
+
+  emptyBox.classList.add('hidden');
+  const todayIso = getTodayIsoLocal();
+
+  listToShow.forEach(b => {
+    const isDelivered = b.status === 'Delivered';
+    const isToday = !isDelivered && b.deliveryDateIso === todayIso;
+    const isPastDue = !isDelivered && b.deliveryDateIso && b.deliveryDateIso < todayIso;
+
+    let statusPillHtml = '';
+    let cardBorderClass = 'border-slate-200';
+    if (isDelivered) {
+      statusPillHtml = `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i>डिलीवरी पूर्ण</span>`;
+    } else if (isToday) {
+      statusPillHtml = `<span class="bg-rose-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full animate-pulse">🔥 आज डिलीवरी!</span>`;
+      cardBorderClass = 'border-rose-300 ring-1 ring-rose-200';
+    } else if (isPastDue) {
+      statusPillHtml = `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">⏰ पेंडिंग (पुरानी तारीख)</span>`;
+      cardBorderClass = 'border-amber-300';
+    } else {
+      statusPillHtml = `<span class="bg-blue-50 text-brand-blue border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full">📅 आगामी बुकिंग</span>`;
+    }
+
+    const assignBadgeHtml = (b.assignedType === 'ALL')
+      ? `<span class="bg-purple-50 text-purple-700 border border-purple-200 text-[9.5px] font-bold px-2 py-0.5 rounded-full">सभी के लिए (ALL)</span>`
+      : `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9.5px] font-bold px-2 py-0.5 rounded-full">आपकी ड्यूटी</span>`;
+
+    const cleanPhone = String(b.mobile || '').replace(/[^\d+]/g, '');
+    const hasPhone = cleanPhone.length >= 10;
+    const telHref = hasPhone ? `tel:${cleanPhone}` : 'javascript:void(0)';
+
+    const rawLoc = String(b.location || '').trim();
+    const hasLocation = rawLoc.length > 0;
+    const isMapUrl = /^https?:\/\//i.test(rawLoc);
+    const mapHref = hasLocation
+      ? (isMapUrl ? rawLoc : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rawLoc)}`)
+      : 'javascript:void(0)';
+
+    const totalAmt = Number(b.totalAmount || 0);
+    const advAmt = Number(b.advanceAmount || 0);
+    const dueAmt = Number(b.dueAmount !== undefined ? b.dueAmount : Math.max(0, totalAmt - advAmt));
+
+    const card = document.createElement('div');
+    card.className = `bg-white rounded-2xl border ${cardBorderClass} shadow-sm overflow-hidden`;
+    card.innerHTML = `
+      <!-- Card Top Header -->
+      <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">🎉 ${escapeHtml(b.eventType || 'फंक्शन')}</span>
+          ${assignBadgeHtml}
+        </div>
+        ${statusPillHtml}
+      </div>
+
+      <div class="p-3.5 space-y-2.5">
+        <!-- Date, Time & Jar Qty -->
+        <div class="flex items-center justify-between gap-2">
+          <div class="text-xs font-bold text-slate-800">
+            <span class="inline-flex items-center gap-1 text-brand-blue"><i class="fa-solid fa-calendar-day"></i> ${escapeHtml(b.deliveryDate || 'तारीख तय नहीं')}</span>
+            ${b.deliveryTime ? `<span class="text-slate-500 font-semibold ml-1.5">• ⏰ ${escapeHtml(b.deliveryTime)}</span>` : ''}
+          </div>
+          <span class="shrink-0 bg-sky-50 border border-sky-200 text-sky-800 text-xs font-extrabold px-2.5 py-1 rounded-xl">
+            💧 ${Number(b.jarQty || 0)} जार
+          </span>
+        </div>
+
+        <!-- Customer Name & ID -->
+        <div class="flex items-center justify-between gap-2 pt-0.5">
+          <div class="min-w-0">
+            <span class="block text-[10px] text-slate-500 font-medium">ग्राहक का नाम</span>
+            <strong class="block text-sm font-extrabold text-slate-900 truncate">${escapeHtml(b.customerName || 'ग्राहक')}</strong>
+          </div>
+          <span class="text-[10px] font-mono text-slate-400 font-semibold shrink-0">#${escapeHtml(b.bookingId || '')}</span>
+        </div>
+
+        <!-- Payment Breakdown (Total / Advance / Due) -->
+        <div class="grid grid-cols-3 gap-1.5 text-center">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
+            <span class="block text-[9.5px] font-bold text-slate-500">कुल बिल</span>
+            <strong class="text-xs font-extrabold text-slate-800">₹${totalAmt.toLocaleString('en-IN')}</strong>
+          </div>
+          <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-2">
+            <span class="block text-[9.5px] font-bold text-emerald-700">एडवांस जमा</span>
+            <strong class="text-xs font-extrabold text-emerald-600">₹${advAmt.toLocaleString('en-IN')}</strong>
+          </div>
+          <div class="${dueAmt > 0 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'} border rounded-xl p-2">
+            <span class="block text-[9.5px] font-bold ${dueAmt > 0 ? 'text-rose-700' : 'text-emerald-700'}">बाकी लेने हैं</span>
+            <strong class="text-xs font-extrabold ${dueAmt > 0 ? 'text-rose-600' : 'text-emerald-600'}">₹${dueAmt.toLocaleString('en-IN')}</strong>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-2.5 flex items-start gap-2 text-[11px]">
+          <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0"></i>
+          <div class="min-w-0 flex-1 text-slate-700 font-medium break-words">
+            ${hasLocation ? (isMapUrl ? 'Google Maps लोकेशन लिंक संलग्न है' : escapeHtml(rawLoc)) : 'लोकेशन दर्ज नहीं है'}
+          </div>
+        </div>
+
+        <!-- Notes (If present) -->
+        ${b.notes ? `
+          <div class="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5 flex items-start gap-2 text-[11px]">
+            <i class="fa-solid fa-note-sticky text-amber-600 mt-0.5 shrink-0"></i>
+            <div class="text-amber-950 font-medium break-words"><strong>नोट:</strong> ${escapeHtml(b.notes)}</div>
+          </div>
+        ` : ''}
+
+        <!-- Quick Call & Map Buttons -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <a href="${telHref}" ${hasPhone ? '' : 'aria-disabled="true"'} class="${hasPhone ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 pointer-events-none'} py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-phone"></i>
+            <span>${hasPhone ? 'कॉल करें' : 'नंबर नहीं'}</span>
+          </a>
+          <a href="${mapHref}" ${hasLocation ? 'target="_blank" rel="noopener noreferrer"' : 'aria-disabled="true"'} class="${hasLocation ? 'bg-brand-blue hover:bg-blue-900 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 pointer-events-none'} py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span>मैप खोलें</span>
+          </a>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
 }
 
 // ================= 7B. LIVE INCREMENT PROGRESS BAR SYSTEM =================
@@ -652,7 +1071,6 @@ function syncIdCardData() {
   const dobEl = document.getElementById('idCardDob');
   const joinEl = document.getElementById('idCardJoinDate');
   const monthEl = document.getElementById('idCardMonth');
-  const avatarEl = document.getElementById('idCardAvatar');
 
   if (nameEl) nameEl.textContent = currentStaff.name || "जल मित्र";
   if (idEl) idEl.textContent = currentStaff.id || "BP---";
@@ -661,12 +1079,7 @@ function syncIdCardData() {
   if (joinEl) joinEl.textContent = currentStaff.joiningDateDisplay || "----";
   if (monthEl) monthEl.textContent = currentSelectedMonth || "सत्यापित सदस्य";
 
-  if (avatarEl) {
-    avatarEl.src = currentStaff.photo ? currentStaff.photo : "app-icon.png";
-    avatarEl.onerror = () => {
-      avatarEl.src = "app-icon.png";
-    };
-  }
+  applyProfilePhotoUI();
 }
 
 function openIdCardModal() {
@@ -936,7 +1349,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Helper: Generate HD Canvas of Salary Slip
+// Helper: Generate HD Canvas of Salary Slip (Corporate 2-Column Wide Layout)
 async function captureSalarySlipCanvas() {
   if (typeof html2canvas === 'undefined') {
     throw new Error("html2canvas लोड नहीं हुआ, कृपया इंटरनेट जांचें।");
@@ -971,13 +1384,13 @@ async function captureSalarySlipCanvas() {
       logging: false,
       scrollX: 0,
       scrollY: 0,
-      windowWidth: document.documentElement.scrollWidth,
+      windowWidth: 800,
       windowHeight: document.documentElement.scrollHeight,
       onclone: (clonedDoc) => {
         const clonedSlip = clonedDoc.getElementById('salarySlipCapture');
         if (clonedSlip) {
-          clonedSlip.style.width = '380px';
-          clonedSlip.style.maxWidth = '380px';
+          clonedSlip.style.width = '560px';
+          clonedSlip.style.maxWidth = '560px';
           clonedSlip.style.margin = '0 auto';
           clonedSlip.style.transform = 'none';
           clonedSlip.style.animation = 'none';
@@ -985,6 +1398,7 @@ async function captureSalarySlipCanvas() {
         }
         const clonedModalInner = clonedDoc.querySelector('#salarySlipModal > div');
         if (clonedModalInner) {
+          clonedModalInner.style.maxWidth = '560px';
           clonedModalInner.style.transform = 'none';
           clonedModalInner.style.animation = 'none';
         }
@@ -1144,6 +1558,11 @@ function logout() {
 
   globalMonthMap = {};
   globalMonthList = [];
+  globalBookings = [];
+  currentBookingFilter = 'Pending';
+  updateBookingBadgesAndAlert();
+  renderBookings();
+
   incrementState = {
     customers: 0,
     months: 0,
@@ -1151,6 +1570,7 @@ function logout() {
     targetMonths: 12
   };
   updateIncrementProgress();
+  applyProfilePhotoUI();
 
   // Reset Profile Text
   document.getElementById('vStaffName').textContent = "नमस्ते, अतिथि";

@@ -629,6 +629,55 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// 24-Hour Time (e.g. "15:34") -> 12-Hour AM/PM (e.g. "03:34 PM")
+function formatTime12Hr(rawTime) {
+  const t = String(rawTime || '').trim();
+  if (!t) return '';
+  if (/\b(am|pm)\b/i.test(t)) return t;
+  const match = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (!match) return t;
+  let hour = parseInt(match[1], 10);
+  const minute = match[2];
+  if (isNaN(hour) || hour < 0 || hour > 23) return t;
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${String(hour).padStart(2, '0')}:${minute} ${ampm}`;
+}
+
+// Colored Water Delivery Truck SVG Image (Works 100% Offline)
+function getDeliveryTruckSvg() {
+  return `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 40" class="w-8 h-5 shrink-0 drop-shadow-sm" aria-hidden="true">
+      <!-- Cargo Box (Water Blue) -->
+      <rect x="2" y="6" width="36" height="22" rx="4" fill="#0284c7" stroke="#003366" stroke-width="2"/>
+      <!-- Water Droplet Emblem on Truck -->
+      <path d="M20 11 C20 11 15 17 15 20.5 A5 5 0 0 0 25 20.5 C25 17 20 11 20 11 Z" fill="#e0f2fe"/>
+      <!-- Cabin (Saffron Orange) -->
+      <path d="M38 13 H50 L58 21 V28 H38 Z" fill="#f97316" stroke="#003366" stroke-width="2" stroke-linejoin="round"/>
+      <!-- Cabin Window -->
+      <path d="M41 16 H49 L54 21 H41 Z" fill="#e0f2fe"/>
+      <!-- Chassis -->
+      <rect x="3" y="27" width="56" height="3.5" rx="1.5" fill="#003366"/>
+      <!-- Wheels -->
+      <circle cx="15" cy="32" r="5.5" fill="#1e293b" stroke="#ffffff" stroke-width="1.5"/>
+      <circle cx="15" cy="32" r="2" fill="#cbd5e1"/>
+      <circle cx="48" cy="32" r="5.5" fill="#1e293b" stroke="#ffffff" stroke-width="1.5"/>
+      <circle cx="48" cy="32" r="2" fill="#cbd5e1"/>
+    </svg>
+  `;
+}
+
+function toggleBookingDetails(idx) {
+  const box = document.getElementById(`bookingDetailBox-${idx}`);
+  const arrow = document.getElementById(`bookingDetailArrow-${idx}`);
+  if (!box) return;
+  box.classList.toggle('hidden');
+  if (arrow) {
+    arrow.classList.toggle('rotate-180');
+  }
+}
+
 function updateBookingBadgesAndAlert() {
   const todayIso = getTodayIsoLocal();
   const pendingList = globalBookings.filter(b => b.status !== 'Delivered');
@@ -734,28 +783,33 @@ function renderBookings() {
   emptyBox.classList.add('hidden');
   const todayIso = getTodayIsoLocal();
 
-  listToShow.forEach(b => {
+  listToShow.forEach((b, idx) => {
     const isDelivered = b.status === 'Delivered';
     const isToday = !isDelivered && b.deliveryDateIso === todayIso;
     const isPastDue = !isDelivered && b.deliveryDateIso && b.deliveryDateIso < todayIso;
 
-    let statusPillHtml = '';
-    let cardBorderClass = 'border-slate-200';
+    // Distinct Top Header Bar per Card so cards never look mixed
+    let headerBgClass = 'bg-[#003366] text-white';
+    let cardBorderClass = 'border-slate-300';
+    let statusPillHtml = `<span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">📅 आगामी</span>`;
+
     if (isDelivered) {
-      statusPillHtml = `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i>डिलीवरी पूर्ण</span>`;
+      headerBgClass = 'bg-emerald-700 text-white';
+      cardBorderClass = 'border-emerald-300';
+      statusPillHtml = `<span class="bg-white text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">✓ डिलीवरी पूर्ण</span>`;
     } else if (isToday) {
-      statusPillHtml = `<span class="bg-rose-600 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full animate-pulse">🔥 आज डिलीवरी!</span>`;
-      cardBorderClass = 'border-rose-300 ring-1 ring-rose-200';
+      headerBgClass = 'bg-gradient-to-r from-rose-600 to-orange-600 text-white';
+      cardBorderClass = 'border-rose-400 ring-2 ring-rose-200';
+      statusPillHtml = `<span class="bg-white text-rose-600 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-sm">🔥 आज डिलीवरी!</span>`;
     } else if (isPastDue) {
-      statusPillHtml = `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">⏰ पेंडिंग (पुरानी तारीख)</span>`;
+      headerBgClass = 'bg-amber-700 text-white';
       cardBorderClass = 'border-amber-300';
-    } else {
-      statusPillHtml = `<span class="bg-blue-50 text-brand-blue border border-blue-200 text-[10px] font-bold px-2 py-0.5 rounded-full">📅 आगामी बुकिंग</span>`;
+      statusPillHtml = `<span class="bg-amber-200 text-amber-950 text-[10px] font-extrabold px-2 py-0.5 rounded-full">⏰ पेंडिंग</span>`;
     }
 
     const assignBadgeHtml = (b.assignedType === 'ALL')
-      ? `<span class="bg-purple-50 text-purple-700 border border-purple-200 text-[9.5px] font-bold px-2 py-0.5 rounded-full">सभी के लिए (ALL)</span>`
-      : `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9.5px] font-bold px-2 py-0.5 rounded-full">आपकी ड्यूटी</span>`;
+      ? `<span class="bg-white/20 text-blue-100 text-[9.5px] font-bold px-2 py-0.5 rounded-full">सभी (ALL)</span>`
+      : `<span class="bg-amber-300 text-slate-900 text-[9.5px] font-extrabold px-2 py-0.5 rounded-full">आपकी ड्यूटी</span>`;
 
     const cleanPhone = String(b.mobile || '').replace(/[^\d+]/g, '');
     const hasPhone = cleanPhone.length >= 10;
@@ -771,82 +825,106 @@ function renderBookings() {
     const totalAmt = Number(b.totalAmount || 0);
     const advAmt = Number(b.advanceAmount || 0);
     const dueAmt = Number(b.dueAmount !== undefined ? b.dueAmount : Math.max(0, totalAmt - advAmt));
+    const formattedTime = formatTime12Hr(b.deliveryTime);
+
+    // Today's delivery details stay open automatically; upcoming start clean & compact
+    const detailsHiddenClass = isToday ? '' : 'hidden';
+    const arrowRotateClass = isToday ? 'rotate-180' : '';
 
     const card = document.createElement('div');
-    card.className = `bg-white rounded-2xl border ${cardBorderClass} shadow-sm overflow-hidden`;
+    card.className = `bg-white rounded-2xl border ${cardBorderClass} shadow-md overflow-hidden`;
     card.innerHTML = `
-      <!-- Card Top Header -->
-      <div class="px-3.5 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-2 flex-wrap">
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">🎉 ${escapeHtml(b.eventType || 'फंक्शन')}</span>
+      <!-- Distinct Card Number & Event Header -->
+      <div class="${headerBgClass} px-3.5 py-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap min-w-0">
+          <span class="bg-black/25 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md">#${idx + 1}</span>
+          <span class="text-xs font-extrabold truncate">🎉 ${escapeHtml(b.eventType || 'फंक्शन')}</span>
           ${assignBadgeHtml}
         </div>
-        ${statusPillHtml}
+        <div class="shrink-0">${statusPillHtml}</div>
       </div>
 
       <div class="p-3.5 space-y-2.5">
-        <!-- Date, Time & Jar Qty -->
-        <div class="flex items-center justify-between gap-2">
-          <div class="text-xs font-bold text-slate-800">
-            <span class="inline-flex items-center gap-1 text-brand-blue"><i class="fa-solid fa-calendar-day"></i> ${escapeHtml(b.deliveryDate || 'तारीख तय नहीं')}</span>
-            ${b.deliveryTime ? `<span class="text-slate-500 font-semibold ml-1.5">• ⏰ ${escapeHtml(b.deliveryTime)}</span>` : ''}
+        <!-- Delivery Truck Image + Date & 12-Hr Time + Jars -->
+        <div class="bg-blue-50/70 border border-blue-200/80 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2 min-w-0">
+            ${getDeliveryTruckSvg()}
+            <div class="min-w-0 leading-tight">
+              <span class="block text-[9.5px] font-bold text-slate-500">डिलीवरी तारीख व समय</span>
+              <strong class="block text-xs font-extrabold text-brand-blue truncate">
+                ${escapeHtml(b.deliveryDate || 'तारीख तय नहीं')}${formattedTime ? ` • ${escapeHtml(formattedTime)}` : ''}
+              </strong>
+            </div>
           </div>
-          <span class="shrink-0 bg-sky-50 border border-sky-200 text-sky-800 text-xs font-extrabold px-2.5 py-1 rounded-xl">
+          <span class="shrink-0 bg-white border border-sky-300 text-sky-800 text-xs font-extrabold px-2.5 py-1 rounded-lg shadow-sm">
             💧 ${Number(b.jarQty || 0)} जार
           </span>
         </div>
 
-        <!-- Customer Name & ID -->
-        <div class="flex items-center justify-between gap-2 pt-0.5">
+        <!-- Customer Name & Remaining Due Highlight -->
+        <div class="flex items-center justify-between gap-2 px-0.5">
           <div class="min-w-0">
-            <span class="block text-[10px] text-slate-500 font-medium">ग्राहक का नाम</span>
+            <span class="block text-[10px] text-slate-500 font-semibold">ग्राहक का नाम</span>
             <strong class="block text-sm font-extrabold text-slate-900 truncate">${escapeHtml(b.customerName || 'ग्राहक')}</strong>
           </div>
-          <span class="text-[10px] font-mono text-slate-400 font-semibold shrink-0">#${escapeHtml(b.bookingId || '')}</span>
-        </div>
-
-        <!-- Payment Breakdown (Total / Advance / Due) -->
-        <div class="grid grid-cols-3 gap-1.5 text-center">
-          <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
-            <span class="block text-[9.5px] font-bold text-slate-500">कुल बिल</span>
-            <strong class="text-xs font-extrabold text-slate-800">₹${totalAmt.toLocaleString('en-IN')}</strong>
-          </div>
-          <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-2">
-            <span class="block text-[9.5px] font-bold text-emerald-700">एडवांस जमा</span>
-            <strong class="text-xs font-extrabold text-emerald-600">₹${advAmt.toLocaleString('en-IN')}</strong>
-          </div>
-          <div class="${dueAmt > 0 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'} border rounded-xl p-2">
+          <div class="text-right shrink-0 ${dueAmt > 0 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'} border rounded-xl px-2.5 py-1">
             <span class="block text-[9.5px] font-bold ${dueAmt > 0 ? 'text-rose-700' : 'text-emerald-700'}">बाकी लेने हैं</span>
-            <strong class="text-xs font-extrabold ${dueAmt > 0 ? 'text-rose-600' : 'text-emerald-600'}">₹${dueAmt.toLocaleString('en-IN')}</strong>
+            <strong class="text-sm font-extrabold ${dueAmt > 0 ? 'text-rose-600' : 'text-emerald-600'}">₹${dueAmt.toLocaleString('en-IN')}</strong>
           </div>
         </div>
 
         <!-- Location -->
-        <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-2.5 flex items-start gap-2 text-[11px]">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-start gap-2 text-[11px]">
           <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0"></i>
-          <div class="min-w-0 flex-1 text-slate-700 font-medium break-words">
+          <div class="min-w-0 flex-1 text-slate-700 font-semibold break-words">
             ${hasLocation ? (isMapUrl ? 'Google Maps लोकेशन लिंक संलग्न है' : escapeHtml(rawLoc)) : 'लोकेशन दर्ज नहीं है'}
           </div>
         </div>
 
-        <!-- Notes (If present) -->
-        ${b.notes ? `
-          <div class="bg-amber-50/70 border border-amber-200/80 rounded-xl p-2.5 flex items-start gap-2 text-[11px]">
-            <i class="fa-solid fa-note-sticky text-amber-600 mt-0.5 shrink-0"></i>
-            <div class="text-amber-950 font-medium break-words"><strong>नोट:</strong> ${escapeHtml(b.notes)}</div>
+        <!-- Expandable Full Details (Total, Advance, Notes, ID) -->
+        <div id="bookingDetailBox-${idx}" class="${detailsHiddenClass} space-y-2 pt-0.5">
+          <div class="grid grid-cols-3 gap-1.5 text-center">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
+              <span class="block text-[9.5px] font-bold text-slate-500">कुल बिल</span>
+              <strong class="text-xs font-extrabold text-slate-800">₹${totalAmt.toLocaleString('en-IN')}</strong>
+            </div>
+            <div class="bg-emerald-50/80 border border-emerald-200 rounded-xl p-2">
+              <span class="block text-[9.5px] font-bold text-emerald-700">एडवांस जमा</span>
+              <strong class="text-xs font-extrabold text-emerald-600">₹${advAmt.toLocaleString('en-IN')}</strong>
+            </div>
+            <div class="${dueAmt > 0 ? 'bg-rose-50 border-rose-200' : 'bg-emerald-50 border-emerald-200'} border rounded-xl p-2">
+              <span class="block text-[9.5px] font-bold ${dueAmt > 0 ? 'text-rose-700' : 'text-emerald-700'}">बकाया</span>
+              <strong class="text-xs font-extrabold ${dueAmt > 0 ? 'text-rose-600' : 'text-emerald-600'}">₹${dueAmt.toLocaleString('en-IN')}</strong>
+            </div>
           </div>
-        ` : ''}
 
-        <!-- Quick Call & Map Buttons -->
-        <div class="grid grid-cols-2 gap-2 pt-1">
-          <a href="${telHref}" ${hasPhone ? '' : 'aria-disabled="true"'} class="${hasPhone ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 pointer-events-none'} py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition">
+          ${b.notes ? `
+            <div class="bg-amber-50/80 border border-amber-200 rounded-xl p-2.5 flex items-start gap-2 text-[11px]">
+              <i class="fa-solid fa-note-sticky text-amber-600 mt-0.5 shrink-0"></i>
+              <div class="text-amber-950 font-medium break-words"><strong>नोट:</strong> ${escapeHtml(b.notes)}</div>
+            </div>
+          ` : ''}
+
+          <div class="flex items-center justify-between text-[10px] text-slate-400 font-mono px-1">
+            <span>बुकिंग ID: #${escapeHtml(b.bookingId || '')}</span>
+            <span>मोबाइल: ${hasPhone ? escapeHtml(b.mobile) : 'उपलब्ध नहीं'}</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons: Call, Map & Expand Details -->
+        <div class="grid grid-cols-3 gap-2 pt-0.5">
+          <a href="${telHref}" ${hasPhone ? '' : 'aria-disabled="true"'} class="${hasPhone ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 pointer-events-none'} py-2 px-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1 transition">
             <i class="fa-solid fa-phone"></i>
             <span>${hasPhone ? 'कॉल करें' : 'नंबर नहीं'}</span>
           </a>
-          <a href="${mapHref}" ${hasLocation ? 'target="_blank" rel="noopener noreferrer"' : 'aria-disabled="true"'} class="${hasLocation ? 'bg-brand-blue hover:bg-blue-900 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 pointer-events-none'} py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition">
+          <a href="${mapHref}" ${hasLocation ? 'target="_blank" rel="noopener noreferrer"' : 'aria-disabled="true"'} class="${hasLocation ? 'bg-brand-blue hover:bg-blue-900 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 pointer-events-none'} py-2 px-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1 transition">
             <i class="fa-solid fa-map-location-dot"></i>
             <span>मैप खोलें</span>
           </a>
+          <button type="button" onclick="toggleBookingDetails(${idx})" class="bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 border border-slate-200 py-2 px-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1 transition">
+            <span>डिटेल</span>
+            <i id="bookingDetailArrow-${idx}" class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200 ${arrowRotateClass}"></i>
+          </button>
         </div>
       </div>
     `;
