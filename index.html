@@ -154,6 +154,13 @@
         <span>डैशबोर्ड (होम)</span>
       </button>
 
+      <!-- Bookings Menu Item -->
+      <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-amber-800 bg-amber-50/70 font-bold text-xs text-left active:bg-amber-100 transition" onclick="navigateTab('tab-bookings'); toggleSidebar(false);">
+        <i class="fa-solid fa-truck-fast text-amber-600 w-5 text-center"></i>
+        <span>शादी / फंक्शन बुकिंग्स</span>
+        <span id="sideBookingBadge" class="ml-auto hidden text-[9.5px] bg-rose-600 text-white px-1.5 py-0.5 rounded-full font-extrabold">0</span>
+      </button>
+
       <!-- Digital ID Card Menu Item -->
       <button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-brand-blue bg-blue-50/70 font-bold text-xs text-left active:bg-blue-100 transition" onclick="openIdCardModal(); toggleSidebar(false);">
         <i class="fa-solid fa-id-card text-brand-lightBlue w-5 text-center"></i>
@@ -246,6 +253,22 @@
           </select>
         </div>
       </div>
+
+      <!-- Upcoming / Today Booking Alert Strip (Shown only when pending bookings exist) -->
+      <button id="dashBookingAlert" type="button" onclick="navigateTab('tab-bookings')" class="hidden w-full text-left bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl p-3 mb-3 shadow-sm items-center justify-between gap-2 active:scale-[0.99] transition">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-sm shrink-0 shadow-sm">
+            <i class="fa-solid fa-truck-fast"></i>
+          </span>
+          <div class="min-w-0">
+            <span class="block text-[10px] font-extrabold text-amber-800 uppercase tracking-wide">नई बुकिंग अलर्ट</span>
+            <p id="dashBookingAlertText" class="text-xs font-bold text-slate-800 truncate">0 आगामी बुकिंग पेंडिंग हैं</p>
+          </div>
+        </div>
+        <span class="shrink-0 bg-amber-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+          देखें <i class="fa-solid fa-chevron-right text-[8px] ml-0.5"></i>
+        </span>
+      </button>
 
       <!-- Net In-Hand Salary Banner -->
       <div class="bg-gradient-to-br from-[#003366] to-[#1e40af] text-white rounded-2xl p-4 shadow-md text-center mb-3">
@@ -388,7 +411,50 @@
       </button>
     </div>
 
-    <!-- VIEW 2: SALARY BREAKDOWN (HISAAB TAB) -->
+    <!-- VIEW 2: BOOKINGS (WEDDING / FUNCTION ORDERS TAB) -->
+    <div id="view-bookings" class="tab-view hidden max-w-md mx-auto pt-2">
+
+      <!-- Bookings Header Card -->
+      <div class="bg-gradient-to-r from-[#002855] via-[#003366] to-[#0284c7] text-white rounded-2xl p-3.5 shadow-sm mb-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="w-9 h-9 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-amber-300 text-base shrink-0">
+              <i class="fa-solid fa-calendar-check"></i>
+            </span>
+            <div class="min-w-0">
+              <h6 class="font-bold text-sm leading-tight truncate">शादी / फंक्शन बुकिंग्स</h6>
+              <span class="text-[10px] text-blue-200 block">तारीख, ग्राहक, जार, लोकेशन और बकाया हिसाब</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending / Delivered Filter Buttons -->
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button id="bookingFilterPending" type="button" onclick="setBookingFilter('Pending')" class="py-1.5 px-3 rounded-xl text-xs font-bold bg-white text-brand-blue shadow-sm transition flex items-center justify-center gap-1.5">
+            <span>आगामी / पेंडिंग</span>
+            <span id="bookingFilterPendingCount" class="bg-amber-400 text-slate-900 text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+          <button id="bookingFilterDelivered" type="button" onclick="setBookingFilter('Delivered')" class="py-1.5 px-3 rounded-xl text-xs font-bold bg-white/15 text-white border border-white/20 transition flex items-center justify-center gap-1.5">
+            <span>पूरी हुई</span>
+            <span id="bookingFilterDeliveredCount" class="bg-white/25 text-white text-[10px] font-extrabold px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bookings Cards Container -->
+      <div id="bookingsListContainer" class="space-y-3 pb-3"></div>
+
+      <!-- Empty State -->
+      <div id="bookingsEmptyBox" class="hidden bg-white rounded-2xl p-6 border border-slate-200 text-center shadow-sm">
+        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-brand-blue flex items-center justify-center mx-auto mb-2.5 text-xl">
+          <i class="fa-solid fa-champagne-glasses"></i>
+        </div>
+        <h6 class="text-xs font-bold text-slate-800 mb-1">कोई बुकिंग नहीं मिली</h6>
+        <p id="bookingsEmptyText" class="text-[11px] text-slate-500">अभी कोई आगामी शादी या फंक्शन बुकिंग दर्ज नहीं है।</p>
+      </div>
+    </div>
+
+    <!-- VIEW 3: SALARY BREAKDOWN (HISAAB TAB) -->
     <div id="view-salary" class="tab-view hidden max-w-md mx-auto pt-2">
 
       <!-- Official Salary Slip Quick Action Banner inside Salary Tab -->
@@ -530,7 +596,7 @@
       </div>
     </div>
 
-    <!-- VIEW 3: INCREMENT PROGRESS & POLICY TAB -->
+    <!-- VIEW 4: INCREMENT PROGRESS & POLICY TAB -->
     <div id="view-increment" class="tab-view hidden max-w-md mx-auto pt-2 space-y-3">
 
       <!-- LIVE INCREMENT PROGRESS TRACKER CARD -->
@@ -672,24 +738,33 @@
     </div>
   </main>
 
-  <!-- ================= 4. APP BOTTOM NAVIGATION BAR (EXACTLY 3 TABS) ================= -->
-  <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around z-30 px-2 shadow-lg">
+  <!-- ================= 4. APP BOTTOM NAVIGATION BAR (4 TABS) ================= -->
+  <nav id="bottomNav" class="fixed bottom-0 left-0 right-0 h-14 bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around z-30 px-1 shadow-lg">
     <!-- Tab 1: Dashboard -->
     <button class="nav-tab active flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition" onclick="navigateTab('tab-dashboard')" id="btn-tab-dashboard">
       <i class="fa-solid fa-house text-base mb-0.5"></i>
-      <span class="text-[10px] font-bold">डैशबोर्ड</span>
+      <span class="text-[9.5px] font-bold whitespace-nowrap">डैशबोर्ड</span>
     </button>
 
-    <!-- Tab 2: Salary Hisaab -->
+    <!-- Tab 2: Bookings -->
+    <button class="nav-tab flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition relative" onclick="navigateTab('tab-bookings')" id="btn-tab-bookings">
+      <div class="relative inline-flex items-center justify-center">
+        <i class="fa-solid fa-truck-fast text-base mb-0.5"></i>
+        <span id="navBookingBadge" class="hidden absolute -top-1.5 -right-2.5 bg-rose-600 text-white text-[8.5px] font-extrabold min-w-[15px] h-[15px] px-1 rounded-full items-center justify-center leading-none shadow-sm">0</span>
+      </div>
+      <span class="text-[9.5px] font-bold whitespace-nowrap">बुकिंग्स</span>
+    </button>
+
+    <!-- Tab 3: Salary Hisaab -->
     <button class="nav-tab flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition" onclick="navigateTab('tab-salary')" id="btn-tab-salary">
       <i class="fa-solid fa-wallet text-base mb-0.5"></i>
-      <span class="text-[10px] font-bold">वेतन हिसाब</span>
+      <span class="text-[9.5px] font-bold whitespace-nowrap">वेतन हिसाब</span>
     </button>
 
-    <!-- Tab 3: Increment Policy -->
+    <!-- Tab 4: Increment Policy -->
     <button class="nav-tab flex flex-col items-center justify-center flex-1 py-1 text-slate-400 transition" onclick="navigateTab('tab-increment')" id="btn-tab-increment">
       <i class="fa-solid fa-award text-base mb-0.5"></i>
-      <span class="text-[10px] font-bold">इंक्रीमेंट नियम</span>
+      <span class="text-[9.5px] font-bold whitespace-nowrap">इंक्रीमेंट</span>
     </button>
   </nav>
 
