@@ -31,7 +31,6 @@ let isLoggedIn = false;
 
 // ================= 2. SPLASH SCREEN & AUTO-LOGIN INITIALIZATION =================
 window.addEventListener('DOMContentLoaded', () => {
-  // 1. Segmented Retro Loading Bar Animation
   const segments = document.querySelectorAll('.segmented-bar .segment');
   let currentSeg = 0;
 
@@ -42,7 +41,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }, 110);
 
-  // 2. Hide Splash Screen smoothly after ~1.6 seconds
   setTimeout(() => {
     clearInterval(barInterval);
     const splash = document.getElementById('splashScreen');
@@ -52,7 +50,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }, 1600);
 
-  // 3. Auto-Login Check (Saved Credentials)
   const savedId = localStorage.getItem('bp_staff_id');
   const savedPin = localStorage.getItem('bp_staff_pin');
   const remember = localStorage.getItem('bp_remember_me');
@@ -105,7 +102,6 @@ function navigateTab(tabKey) {
     buttons[tabKey].classList.add('active');
   }
 
-  // Re-trigger smooth bar fill animation when opening Increment tab
   if (tabKey === 'tab-increment') {
     animateIncrementBars();
   }
@@ -162,7 +158,7 @@ function togglePinVisibility() {
   }
 }
 
-// ================= 5B. LOCAL PROFILE PHOTO SYSTEM (NO SERVER LOAD) =================
+// ================= 5B. LOCAL PROFILE PHOTO SYSTEM =================
 function getStaffPhotoKey(staffId) {
   const clean = String(staffId || '').trim().toUpperCase();
   return clean && clean !== 'BP---' ? `bp_profile_photo_${clean}` : '';
@@ -181,7 +177,6 @@ function getSavedStaffPhoto(staffId) {
 function applyProfilePhotoUI() {
   const activePhoto = currentStaff.photo || "";
 
-  // 1. Dashboard Header Avatar
   const dashPhoto = document.getElementById('dashProfilePhoto');
   const dashIcon = document.getElementById('dashProfileIcon');
   if (dashPhoto && dashIcon) {
@@ -196,7 +191,6 @@ function applyProfilePhotoUI() {
     }
   }
 
-  // 2. Sidebar Profile Avatar
   const sidePhoto = document.getElementById('sideProfilePhoto');
   const sideEmoji = document.getElementById('sideProfileEmoji');
   if (sidePhoto && sideEmoji) {
@@ -211,7 +205,6 @@ function applyProfilePhotoUI() {
     }
   }
 
-  // 3. Digital ID Card Avatar & Buttons
   const idAvatar = document.getElementById('idCardAvatar');
   if (idAvatar) {
     idAvatar.src = activePhoto ? activePhoto : "app-icon.png";
@@ -363,7 +356,6 @@ function doLogin(isAutoLogin = false) {
         return;
       }
 
-      // Remember me credentials storage
       const rememberCheck = document.getElementById('rememberMeCheck');
       if (rememberCheck && rememberCheck.checked) {
         localStorage.setItem('bp_staff_id', idVal);
@@ -378,7 +370,6 @@ function doLogin(isAutoLogin = false) {
       isLoggedIn = true;
       hideLoginModal();
 
-      // Extract Staff Details & Phone cleanly
       const apiStaff = res.staff || {};
       const rawPhone = apiStaff.phone || apiStaff.mobile || (/^[6-9]\d{9}$/.test(idVal) ? idVal : "");
       const cleanDigits = String(rawPhone).replace(/\D/g, '');
@@ -404,7 +395,6 @@ function doLogin(isAutoLogin = false) {
         joiningDateDisplay: apiStaff.joiningDateDisplay || ""
       };
 
-      // Update Header, Sidebar & Profile Photos
       document.getElementById('vStaffName').textContent = currentStaff.name;
       document.getElementById('vStaffId').textContent = "ID: " + currentStaff.id;
       document.getElementById('sideStaffName').textContent = currentStaff.name;
@@ -417,7 +407,6 @@ function doLogin(isAutoLogin = false) {
       document.getElementById('sideLogoutBtn').classList.remove('hidden');
       document.getElementById('sideLogoutBtn').classList.add('flex');
 
-      // Populate Months in Dropdown
       globalMonthMap = res.monthDataMap || {};
       globalMonthList = res.monthList || Object.keys(globalMonthMap);
 
@@ -435,21 +424,18 @@ function doLogin(isAutoLogin = false) {
       currentSelectedMonth = defaultM;
       renderMonthData(defaultM);
 
-      // Load & Render Wedding / Function Bookings
       globalBookings = Array.isArray(res.bookings) ? res.bookings : [];
       currentBookingFilter = 'Pending';
       updateBookingBadgesAndAlert();
       setBookingFilter('Pending');
 
-      // Update Live Increment Progress Bars
       calculateIncrementProgress(res);
       updateIncrementProgress();
+      renderCareerReport(res);
 
-      // Update ID Card & Salary Slip Data silently
       syncIdCardData();
       syncSalarySlipData();
 
-      // Default Open Dashboard Tab
       navigateTab('tab-dashboard');
     })
     .catch(error => {
@@ -478,21 +464,17 @@ function renderMonthData(m) {
   document.getElementById('vPerfMonth').textContent = d.month;
   document.getElementById('vDetailMonth').textContent = d.month;
 
-  // 1. KPI - Naye Grahak
   const totalCust = (d.regList ? d.regList.length : 0) + (d.altList ? d.altList.length : 0);
   document.getElementById('vTotalCust').textContent = totalCust + " ग्राहक";
   document.getElementById('vCustBreakdown').textContent =
     `${d.regList ? d.regList.length : 0} रेगुलर + ${d.altList ? d.altList.length : 0} अल्टरनेटिव`;
 
-  // 2. KPI - Missed Delivery
   const missedCount = d.missedCount || 0;
   document.getElementById('vMissedDeliveries').textContent = missedCount + " शिकायत";
   document.getElementById('vMissedCutText').textContent = "₹" + (d.missedDeliveries || 0) + " कटौती हुई";
 
-  // 3. KPI - Penalty
   document.getElementById('vPenaltyAmount').textContent = "₹" + (d.damagePenalty || 0);
 
-  // 4. KPI - Attendance Record (Full Leave + Half Day सपोर्ट)
   const totalLeave = Number(d.leaveDays || 0);
   const halfDaysCount = d.halfDays !== undefined
     ? Number(d.halfDays)
@@ -519,11 +501,9 @@ function renderMonthData(m) {
       (d.attendanceBonus > 0) ? `+₹${d.attendanceBonus} इनाम मिला` : "इनाम के पात्र नहीं";
   }
 
-  // Net In-Hand Banner
   document.getElementById('vInHand').textContent = "₹" + (d.inHand || 0).toLocaleString('en-IN');
   document.getElementById('finalInHandBottom').textContent = "₹" + (d.inHand || 0).toLocaleString('en-IN');
 
-  // Paid vs Pending Calculation
   const paid = d.paidAmount !== undefined ? Number(d.paidAmount) : d.inHand;
   const pending = Math.max(0, d.inHand - paid);
 
@@ -541,21 +521,17 @@ function renderMonthData(m) {
     statusTextEl.innerHTML = `<span class="inline-block bg-white/20 text-white text-[10px] px-2.5 py-0.5 rounded-full">हिसाब सामान्य</span>`;
   }
 
-  // 4 Quick Stat Badges
   document.getElementById('vStatBase').textContent = "₹" + (d.baseSalary || 0).toLocaleString('en-IN');
   document.getElementById('vStatIncentive').textContent = "+₹" + (d.totalIncentive || 0).toLocaleString('en-IN');
   document.getElementById('vStatCut').textContent = "-₹" + (d.totalPenalties || 0).toLocaleString('en-IN');
   document.getElementById('vStatAdv').textContent = "-₹" + (d.advanceTaken || 0).toLocaleString('en-IN');
 
-  // Detailed Breakdown (Items 1 to 9)
   document.getElementById('item1').textContent = "₹" + (d.baseSalary || 0).toLocaleString('en-IN');
 
-  // Regular Tanks Accordion List
   document.getElementById('regCountLabel').textContent = `${d.regList ? d.regList.length : 0} टंकी जुड़ीं • सूची देखें ▾`;
   document.getElementById('regTotalAmount').textContent = "+₹" + (d.regIncentiveTotal || 0).toLocaleString('en-IN');
   renderList('regListItems', d.regList);
 
-  // Alternative Tanks Accordion List
   document.getElementById('altCountLabel').textContent = `${d.altList ? d.altList.length : 0} टंकी जुड़ी • सूची देखें ▾`;
   document.getElementById('altTotalAmount').textContent = "+₹" + (d.altIncentiveTotal || 0).toLocaleString('en-IN');
   renderList('altListItems', d.altList);
@@ -586,7 +562,6 @@ function renderMonthData(m) {
   document.getElementById('item9').textContent = "-₹" + (d.advanceTaken || 0).toLocaleString('en-IN');
 }
 
-// Helper: Render Tank List Items
 function renderList(targetId, list) {
   const box = document.getElementById(targetId);
   box.innerHTML = '';
@@ -605,7 +580,6 @@ function renderList(targetId, list) {
   });
 }
 
-// Helper: Accordion Toggle
 function toggleAccordion(id) {
   const el = document.getElementById(id);
   el.classList.toggle('hidden');
@@ -629,7 +603,6 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-// 24-Hour Time (e.g. "15:34") -> 12-Hour AM/PM (e.g. "03:34 PM")
 function formatTime12Hr(rawTime) {
   const t = String(rawTime || '').trim();
   if (!t) return '';
@@ -645,21 +618,14 @@ function formatTime12Hr(rawTime) {
   return `${String(hour).padStart(2, '0')}:${minute} ${ampm}`;
 }
 
-// Colored Water Delivery Truck SVG Image (Works 100% Offline)
 function getDeliveryTruckSvg() {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 40" class="w-8 h-5 shrink-0 drop-shadow-sm" aria-hidden="true">
-      <!-- Cargo Box (Water Blue) -->
       <rect x="2" y="6" width="36" height="22" rx="4" fill="#0284c7" stroke="#003366" stroke-width="2"/>
-      <!-- Water Droplet Emblem on Truck -->
       <path d="M20 11 C20 11 15 17 15 20.5 A5 5 0 0 0 25 20.5 C25 17 20 11 20 11 Z" fill="#e0f2fe"/>
-      <!-- Cabin (Saffron Orange) -->
       <path d="M38 13 H50 L58 21 V28 H38 Z" fill="#f97316" stroke="#003366" stroke-width="2" stroke-linejoin="round"/>
-      <!-- Cabin Window -->
       <path d="M41 16 H49 L54 21 H41 Z" fill="#e0f2fe"/>
-      <!-- Chassis -->
       <rect x="3" y="27" width="56" height="3.5" rx="1.5" fill="#003366"/>
-      <!-- Wheels -->
       <circle cx="15" cy="32" r="5.5" fill="#1e293b" stroke="#ffffff" stroke-width="1.5"/>
       <circle cx="15" cy="32" r="2" fill="#cbd5e1"/>
       <circle cx="48" cy="32" r="5.5" fill="#1e293b" stroke="#ffffff" stroke-width="1.5"/>
@@ -684,7 +650,6 @@ function updateBookingBadgesAndAlert() {
   const pendingCount = pendingList.length;
   const todayCount = pendingList.filter(b => b.deliveryDateIso === todayIso).length;
 
-  // 1. Bottom Nav Badge
   const navBadge = document.getElementById('navBookingBadge');
   if (navBadge) {
     if (pendingCount > 0) {
@@ -697,7 +662,6 @@ function updateBookingBadgesAndAlert() {
     }
   }
 
-  // 2. Sidebar Badge
   const sideBadge = document.getElementById('sideBookingBadge');
   if (sideBadge) {
     if (pendingCount > 0) {
@@ -708,16 +672,13 @@ function updateBookingBadgesAndAlert() {
     }
   }
 
-  // 3. Dashboard Alert Strip
   const alertBox = document.getElementById('dashBookingAlert');
   const alertText = document.getElementById('dashBookingAlertText');
   if (alertBox && alertText) {
     if (pendingCount > 0) {
-      if (todayCount > 0) {
-        alertText.textContent = `🔥 आज ${todayCount} बुकिंग की डिलीवरी है! (कुल पेंडिंग: ${pendingCount})`;
-      } else {
-        alertText.textContent = `आपकी ${pendingCount} आगामी शादी / फंक्शन बुकिंग पेंडिंग हैं`;
-      }
+      alertText.textContent = (todayCount > 0)
+        ? `🔥 आज ${todayCount} बुकिंग की डिलीवरी है! (कुल पेंडिंग: ${pendingCount})`
+        : `आपकी ${pendingCount} आगामी शादी / फंक्शन बुकिंग पेंडिंग हैं`;
       alertBox.classList.remove('hidden');
       alertBox.classList.add('flex');
     } else {
@@ -788,7 +749,6 @@ function renderBookings() {
     const isToday = !isDelivered && b.deliveryDateIso === todayIso;
     const isPastDue = !isDelivered && b.deliveryDateIso && b.deliveryDateIso < todayIso;
 
-    // Distinct Top Header Bar per Card so cards never look mixed
     let headerBgClass = 'bg-[#003366] text-white';
     let cardBorderClass = 'border-slate-300';
     let statusPillHtml = `<span class="bg-white/20 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">📅 आगामी</span>`;
@@ -827,14 +787,12 @@ function renderBookings() {
     const dueAmt = Number(b.dueAmount !== undefined ? b.dueAmount : Math.max(0, totalAmt - advAmt));
     const formattedTime = formatTime12Hr(b.deliveryTime);
 
-    // Today's delivery details stay open automatically; upcoming start clean & compact
     const detailsHiddenClass = isToday ? '' : 'hidden';
     const arrowRotateClass = isToday ? 'rotate-180' : '';
 
     const card = document.createElement('div');
     card.className = `bg-white rounded-2xl border ${cardBorderClass} shadow-md overflow-hidden`;
     card.innerHTML = `
-      <!-- Distinct Card Number & Event Header -->
       <div class="${headerBgClass} px-3.5 py-2 flex items-center justify-between gap-2">
         <div class="flex items-center gap-1.5 flex-wrap min-w-0">
           <span class="bg-black/25 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md">#${idx + 1}</span>
@@ -845,7 +803,6 @@ function renderBookings() {
       </div>
 
       <div class="p-3.5 space-y-2.5">
-        <!-- Delivery Truck Image + Date & 12-Hr Time + Jars -->
         <div class="bg-blue-50/70 border border-blue-200/80 rounded-xl px-3 py-2 flex items-center justify-between gap-2">
           <div class="flex items-center gap-2 min-w-0">
             ${getDeliveryTruckSvg()}
@@ -861,7 +818,6 @@ function renderBookings() {
           </span>
         </div>
 
-        <!-- Customer Name & Remaining Due Highlight -->
         <div class="flex items-center justify-between gap-2 px-0.5">
           <div class="min-w-0">
             <span class="block text-[10px] text-slate-500 font-semibold">ग्राहक का नाम</span>
@@ -873,7 +829,6 @@ function renderBookings() {
           </div>
         </div>
 
-        <!-- Location -->
         <div class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-start gap-2 text-[11px]">
           <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0"></i>
           <div class="min-w-0 flex-1 text-slate-700 font-semibold break-words">
@@ -881,7 +836,6 @@ function renderBookings() {
           </div>
         </div>
 
-        <!-- Expandable Full Details (Total, Advance, Notes, ID) -->
         <div id="bookingDetailBox-${idx}" class="${detailsHiddenClass} space-y-2 pt-0.5">
           <div class="grid grid-cols-3 gap-1.5 text-center">
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-2">
@@ -911,7 +865,6 @@ function renderBookings() {
           </div>
         </div>
 
-        <!-- Action Buttons: Call, Map & Expand Details -->
         <div class="grid grid-cols-3 gap-2 pt-0.5">
           <a href="${telHref}" ${hasPhone ? '' : 'aria-disabled="true"'} class="${hasPhone ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm active:scale-95' : 'bg-slate-100 text-slate-400 pointer-events-none'} py-2 px-2 rounded-xl font-bold text-[11px] flex items-center justify-center gap-1 transition">
             <i class="fa-solid fa-phone"></i>
@@ -933,22 +886,127 @@ function renderBookings() {
   });
 }
 
-// ================= 7B. LIVE INCREMENT PROGRESS BAR SYSTEM =================
-function calcMonthsFromJoinDate(dateStr) {
+// ================= 7B. CAREER REPORT (4 FOCUSED STATS) & INCREMENT PROGRESS =================
+function parseDateLocalSafe(dateStr) {
   if (!dateStr) return null;
-  const jd = new Date(dateStr);
-  if (isNaN(jd.getTime())) return null;
+  const isoMatch = String(dateStr).trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    return new Date(Number(isoMatch[1]), Number(isoMatch[2]) - 1, Number(isoMatch[3]));
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function calcMonthsFromJoinDate(dateStr) {
+  const jd = parseDateLocalSafe(dateStr);
+  if (!jd) return null;
   const now = new Date();
+  if (jd > now) return 0;
   let months = (now.getFullYear() - jd.getFullYear()) * 12 + (now.getMonth() - jd.getMonth());
-  if (now.getDate() >= jd.getDate()) months += 1;
+  if (now.getDate() < jd.getDate()) months -= 1;
   return Math.max(0, months);
+}
+
+function formatTenureDuration(dateStr, fallbackMonths = 0) {
+  const jd = parseDateLocalSafe(dateStr);
+  if (!jd) {
+    return { main: `${fallbackMonths} माह`, sub: "भारत पेयजल के साथ" };
+  }
+  const now = new Date();
+  if (jd > now) {
+    return { main: "0 दिन", sub: "जॉइनिंग आगामी" };
+  }
+
+  let years = now.getFullYear() - jd.getFullYear();
+  let months = now.getMonth() - jd.getMonth();
+  let days = now.getDate() - jd.getDate();
+
+  if (days < 0) {
+    months -= 1;
+    const prevMonthDays = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+    days += prevMonthDays;
+  }
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  let mainText = "";
+  if (years > 0 && months > 0) {
+    mainText = `${years} वर्ष ${months} माह`;
+  } else if (years > 0) {
+    mainText = `${years} वर्ष${days > 0 ? ` ${days} दिन` : ''}`;
+  } else if (months > 0 && days > 0) {
+    mainText = `${months} माह ${days} दिन`;
+  } else if (months > 0) {
+    mainText = `${months} माह`;
+  } else {
+    mainText = `${days} दिन`;
+  }
+
+  const totalFullMonths = (years * 12) + months;
+  const subText = totalFullMonths > 0 ? `कुल ${totalFullMonths} माह पूरे` : "भारत पेयजल के साथ";
+  return { main: mainText, sub: subText };
+}
+
+function renderCareerReport(apiRes = {}) {
+  const joinLabel = document.getElementById('repJoinDateLabel');
+  const tenureEl = document.getElementById('repTotalTenure');
+  const tenureSubEl = document.getElementById('repTenureSub');
+  const incEarnedEl = document.getElementById('repTotalIncentive');
+  const custEl = document.getElementById('repTotalCustomers');
+  const custSplitEl = document.getElementById('repCustSplit');
+  const incCountEl = document.getElementById('repIncrementCount');
+  const incSubEl = document.getElementById('repIncrementSub');
+
+  if (joinLabel) {
+    joinLabel.textContent = `जुड़ने की तिथि: ${currentStaff.joiningDateDisplay || '----'}`;
+  }
+
+  const tenure = formatTenureDuration(currentStaff.joiningDate, incrementState.months);
+  if (tenureEl) tenureEl.textContent = tenure.main;
+  if (tenureSubEl) tenureSubEl.textContent = tenure.sub;
+
+  let allIncentive = 0;
+  let allReg = 0;
+  let allAlt = 0;
+
+  globalMonthList.forEach(mKey => {
+    const mData = globalMonthMap[mKey];
+    if (mData) {
+      allIncentive += Number(mData.totalIncentive || 0);
+      allReg += Array.isArray(mData.regList) ? mData.regList.length : 0;
+      allAlt += Array.isArray(mData.altList) ? mData.altList.length : 0;
+    }
+  });
+
+  const allCust = allReg + allAlt;
+
+  if (incEarnedEl) incEarnedEl.textContent = `₹${allIncentive.toLocaleString('en-IN')}`;
+  if (custEl) custEl.textContent = `${allCust} ग्राहक`;
+  if (custSplitEl) custSplitEl.textContent = `${allReg} रेगुलर + ${allAlt} अल्टरनेटिव`;
+
+  const apiStaff = apiRes.staff || {};
+  const apiInc = apiRes.increment || {};
+  let incCount = Math.min(Math.floor(incrementState.months / 12), Math.floor(allCust / 36));
+  if (apiInc.incrementCount !== undefined) {
+    incCount = Number(apiInc.incrementCount) || 0;
+  } else if (apiStaff.incrementCount !== undefined) {
+    incCount = Number(apiStaff.incrementCount) || 0;
+  }
+
+  if (incCountEl) incCountEl.textContent = `${incCount} बार`;
+  if (incSubEl) {
+    incSubEl.textContent = (incCount > 0)
+      ? "वार्षिक इंक्रीमेंट अर्जित"
+      : (isLoggedIn ? "पहला लक्ष्य प्रगति पर" : "भारत पेयजल परिवार");
+  }
 }
 
 function calculateIncrementProgress(apiRes = {}) {
   const apiStaff = apiRes.staff || {};
   const apiInc = apiRes.increment || {};
 
-  // 1. Calculate Service Tenure Months
   let monthsCount = globalMonthList.length;
   if (apiInc.completedMonths !== undefined) {
     monthsCount = Number(apiInc.completedMonths) || 0;
@@ -961,7 +1019,6 @@ function calculateIncrementProgress(apiRes = {}) {
     }
   }
 
-  // 2. Calculate Total New Customers (Last 12 Months Cycle)
   let totalNewCustomers = 0;
   if (apiInc.totalCustomers !== undefined) {
     totalNewCustomers = Number(apiInc.totalCustomers) || 0;
@@ -1002,7 +1059,6 @@ function updateIncrementProgress() {
   const overallPercent = Math.round((custPercent + monthPercent) / 2);
   const isEligible = isCustDone && isMonthDone;
 
-  // 1. Overall Status Badge
   const overallBadge = document.getElementById('incOverallBadge');
   if (overallBadge) {
     if (isEligible) {
@@ -1014,28 +1070,20 @@ function updateIncrementProgress() {
     }
   }
 
-  // 2. Customer Target Bar & Text
   const custLabel = document.getElementById('incCustProgressLabel');
   const custBadge = document.getElementById('incCustPercentBadge');
   const custBar = document.getElementById('incCustBar');
   const custHint = document.getElementById('incCustHint');
 
-  if (custLabel) {
-    custLabel.textContent = `आपकी वेतन वृद्धि प्रगति: ${customers} / ${targetCustomers} नए ग्राहक पूरे (${custPercent}%)`;
-  }
-  if (custBadge) {
-    custBadge.textContent = `${custPercent}%`;
-  }
-  if (custBar) {
-    custBar.style.width = `${custPercent}%`;
-  }
+  if (custLabel) custLabel.textContent = `आपकी वेतन वृद्धि प्रगति: ${customers} / ${targetCustomers} नए ग्राहक पूरे (${custPercent}%)`;
+  if (custBadge) custBadge.textContent = `${custPercent}%`;
+  if (custBar) custBar.style.width = `${custPercent}%`;
   if (custHint) {
     custHint.textContent = isCustDone
       ? "🎉 बधाई हो! न्यूनतम 36 नए ग्राहकों का लक्ष्य पूरा हुआ"
       : `लक्ष्य पूरा करने के लिए ${custRemaining} नए ग्राहक और जोड़ें`;
   }
 
-  // 3. Service Tenure Bar & Text
   const monthLabel = document.getElementById('incMonthProgressLabel');
   const monthBadge = document.getElementById('incMonthPercentBadge');
   const monthBar = document.getElementById('incMonthBar');
@@ -1046,19 +1094,14 @@ function updateIncrementProgress() {
       ? `सेवाकाल: ${targetMonths} / ${targetMonths} माह पूरे (कुल ${months} माह)`
       : `सेवाकाल: ${displayMonths} / ${targetMonths} माह पूरे`;
   }
-  if (monthBadge) {
-    monthBadge.textContent = `${monthPercent}%`;
-  }
-  if (monthBar) {
-    monthBar.style.width = `${monthPercent}%`;
-  }
+  if (monthBadge) monthBadge.textContent = `${monthPercent}%`;
+  if (monthBar) monthBar.style.width = `${monthPercent}%`;
   if (monthHint) {
     monthHint.textContent = isMonthDone
       ? "✓ 1 वर्ष (12 माह) का सेवाकाल पूर्ण हुआ"
       : `वार्षिक समीक्षा में ${monthRemaining} माह शेष`;
   }
 
-  // 4. Motivational Summary Strip
   const summaryBox = document.getElementById('incSummaryBox');
   const summaryText = document.getElementById('incSummaryText');
   if (summaryBox && summaryText) {
@@ -1086,7 +1129,6 @@ function updateIncrementProgress() {
     }
   }
 
-  // 5. Policy Condition Badges (Condition 1 & 2)
   const cond1Badge = document.getElementById('incCond1Badge');
   const cond2Badge = document.getElementById('incCond2Badge');
 
@@ -1110,7 +1152,6 @@ function updateIncrementProgress() {
     }
   }
 
-  // 6. Dashboard Mini Progress Preview
   const dashPercent = document.getElementById('dashIncPercent');
   const dashBar = document.getElementById('dashIncBar');
   const dashCustText = document.getElementById('dashIncCustText');
@@ -1184,7 +1225,6 @@ function closeIdCardModal() {
   }
 }
 
-// Helper: Generate HD Canvas of ID Card (Clipping-Free Capture)
 async function captureIdCardCanvas() {
   if (typeof html2canvas === 'undefined') {
     throw new Error("html2canvas लोड नहीं हुआ, कृपया इंटरनेट जांचें।");
@@ -1244,7 +1284,6 @@ async function captureIdCardCanvas() {
   }
 }
 
-// Download Digital ID Card as HD PNG
 async function downloadIdCard() {
   const btn = document.getElementById('downloadIdBtn');
   const originalHtml = btn.innerHTML;
@@ -1288,7 +1327,6 @@ async function downloadIdCard() {
   }
 }
 
-// Share Digital ID Card (Image + Proud Caption)
 async function shareIdCard() {
   const btn = document.getElementById('shareIdBtn');
   const originalHtml = btn.innerHTML;
@@ -1413,7 +1451,6 @@ function closeSalarySlipModal() {
   }
 }
 
-// Close ID Card or Salary Slip modal with Escape key
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     const idModal = document.getElementById('idCardModal');
@@ -1427,7 +1464,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Helper: Generate HD Canvas of Salary Slip (Corporate 2-Column Wide Layout)
 async function captureSalarySlipCanvas() {
   if (typeof html2canvas === 'undefined') {
     throw new Error("html2canvas लोड नहीं हुआ, कृपया इंटरनेट जांचें।");
@@ -1488,12 +1524,10 @@ async function captureSalarySlipCanvas() {
   }
 }
 
-// Print / Save PDF or Download HD Payslip
 async function downloadOrPrintSalarySlip() {
   const btn = document.getElementById('downloadSlipBtn');
   const originalHtml = btn.innerHTML;
 
-  // Use native print-to-PDF when running in a standard top-level browser tab
   const isStandalone = window.matchMedia && window.matchMedia('(display-mode: standalone)').matches;
   const isInIframe = window.self !== window.top;
 
@@ -1506,7 +1540,6 @@ async function downloadOrPrintSalarySlip() {
     return;
   }
 
-  // Fallback for Installed PWA / Preview / WebView: Save crisp HD PNG
   try {
     btn.disabled = true;
     btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>सेव हो रहा है...</span>`;
@@ -1547,7 +1580,6 @@ async function downloadOrPrintSalarySlip() {
   }
 }
 
-// Share Salary Slip on WhatsApp (HD Image + Summary Fallback)
 async function shareSalarySlip() {
   const btn = document.getElementById('shareSlipBtn');
   const originalHtml = btn.innerHTML;
@@ -1648,15 +1680,14 @@ function logout() {
     targetMonths: 12
   };
   updateIncrementProgress();
+  renderCareerReport();
   applyProfilePhotoUI();
 
-  // Reset Profile Text
   document.getElementById('vStaffName').textContent = "नमस्ते, अतिथि";
   document.getElementById('vStaffId').textContent = "ID: BP---";
   document.getElementById('sideStaffName').textContent = "लॉगिन नहीं हैं";
   document.getElementById('sideStaffId').textContent = "ID: ----";
 
-  // Hide badge & show login button
   document.getElementById('headerBadge').classList.add('hidden');
   document.getElementById('headerBadge').classList.remove('flex');
   document.getElementById('sideLoginBtn').classList.remove('hidden');
